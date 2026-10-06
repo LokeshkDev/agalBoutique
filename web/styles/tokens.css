@@ -1,0 +1,124 @@
+/* Agal Boutique design tokens — Modern corporate & Meesho/Myntra e-commerce style. */
+
+:root {
+  /* Brand: plum (logo monogram + crown) */
+  --plum-900: #3a1233;
+  --plum-700: #6e1f5a;
+  --plum-600: #8a2a6f;
+  --plum-200: #e6c8dc;
+  --plum-100: #f3e3ee;
+  --plum-50: #faf1f7;
+
+  /* Action: crimson */
+  --crimson-700: #c20f3d;
+  --crimson-600: #e3174b;
+  --crimson-100: #fde4eb;
+
+  /* Accents */
+  --leaf-700: #15733d;
+  --leaf-600: #1e8e4e;
+  --leaf-100: #e3f4ea;
+  --leaf-50: #f0faf4;
+  --sky-600: #1f8dc9;
+
+  /* Meesho / Myntra specific token scales */
+  --rating-green: #238b45;
+  --rating-green-bg: #e6f4ea;
+  --discount-green: #038a41;
+
+  /* Warm neutrals */
+  --ivory: #ffffff;
+  --blush: #fbf5f7;
+  --ink: #1e1e1e;
+  --muted: #666666;
+  --line: #ebebeb;
+
+  /* Shape: 5px rounded corners as requested */
+  --radius-sm: 5px;
+  --radius-md: 5px;
+  --radius-lg: 5px;
+  --radius-pill: 999px;
+  --arch: 5px;
+
+  /* Elevation */
+  --shadow-card: 0 1px 4px rgba(0, 0, 0, 0.08);
+  --shadow-sheet: 0 -4px 20px rgba(0, 0, 0, 0.12);
+  --shadow-pop: 0 4px 14px rgba(0, 0, 0, 0.1);
+
+  /* Motion */
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --dur-fast: 150ms;
+  --dur: 220ms;
+
+  /* Roboto Font Stack */
+  --font-roboto: var(--font-app-roboto), "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: var(--font-roboto);
+  --font-body: var(--font-roboto);
+  --font-sans: var(--font-roboto);
+  --font-heading: var(--font-roboto);
+
+  /* Layout */
+  --gutter: 16px;
+  --container: 1280px;
+}
+
+@media (min-width: 768px) {
+  :root { --gutter: 24px; }
+}
+
+@theme inline {
+  --color-plum-900: var(--plum-900);
+  --color-plum-700: var(--plum-700);
+  --color-plum: var(--plum-600);
+  --color-plum-200: var(--plum-200);
+  --color-plum-soft: var(--plum-100);
+  --color-plum-50: var(--plum-50);
+  --color-crimson-700: var(--crimson-700);
+  --color-crimson: var(--crimson-600);
+  --color-crimson-soft: var(--crimson-100);
+  --color-leaf: var(--leaf-600);
+  --color-leaf-soft: var(--leaf-100);
+  --color-sky: var(--sky-600);
+  --color-ivory: var(--ivory);
+  --color-blush: var(--blush);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --font-display: var(--font-roboto);
+  --font-sans: var(--font-roboto);
+  --font-body: var(--font-roboto);
+  --font-heading: var(--font-roboto);
+  --shadow-sheet: var(--shadow-sheet);
+  --shadow-pop: var(--shadow-pop);
+  --shadow-card: var(--shadow-card);
+}
+
+*, *::before, *::after {
+  font-family: var(--font-roboto), "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+html, body, button, input, select, textarea, p, a, span, li, ul, ol, h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-roboto), "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+}
+
+html {
+  font-size: 17px;
+  background: var(--ivory);
+  color: var(--ink);
+  font-family: var(--font-roboto);
+  -webkit-text-size-adjust: 100%;
+}
+
+@media (min-width: 1024px) {
+  html {
+    font-size: 17.5px;
+  }
+}
+
+h1, h2, h3, h4, h5, h6 { font-family: var(--font-roboto); font-weight: 700; letter-spacing: -0.015em; line-height: 1.2; color: inherit; }
+
+:focus-visible { outline: 2px solid var(--plum-600); outline-offset: 2px; border-radius: 4px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

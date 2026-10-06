@@ -1,0 +1,26 @@
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap");
+@import "tailwindcss";
+@import "../styles/tokens.css";
+
+/* Custom utility & component helpers aligned with Agal Boutique Design System */
+.arch-frame {
+  border-radius: var(--arch);
+  overflow: hidden;
+}
+
+.shadow-sheet {
+  box-shadow: var(--shadow-sheet);
+}
+
+.shadow-pop {
+  box-shadow: var(--shadow-pop);
+}
+
+/* Hide scrollbar for category / horizontal pill lists */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
