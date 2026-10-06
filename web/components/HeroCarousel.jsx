@@ -104,8 +104,8 @@ export default function HeroCarousel() {
                 isActive ? "opacity-100 z-10 pointer-events-auto" : "opacity-0 z-0 pointer-events-none"
               }`}
             >
-              {/* Background Image with High-Contrast Gradient Backdrop */}
-              <div className="absolute inset-0 w-full h-full">
+              {/* Background Image with Tap-to-link on mobile */}
+              <Link href={slide.link} className="absolute inset-0 w-full h-full block">
                 <Image
                   src={slide.image}
                   alt={slide.title}
@@ -114,13 +114,13 @@ export default function HeroCarousel() {
                   sizes="100vw"
                   className="object-cover object-center"
                 />
-                {/* Clean dark gradient overlay for 100% crisp text readability */}
-                <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/65 to-black/30 sm:to-transparent" />
-              </div>
+                {/* Clean dark gradient overlay for text readability - only on tablet and desktop */}
+                <div className="hidden sm:block absolute inset-0 bg-gradient-to-r from-black/90 via-black/65 to-black/30 sm:to-transparent" />
+              </Link>
 
-              {/* Banner Content */}
-              <div className="relative z-10 max-w-[var(--container)] h-full mx-auto px-4 sm:px-8 lg:px-12 flex flex-col justify-center py-6 sm:py-10 text-white">
-                <div className="max-w-xl space-y-2 sm:space-y-3.5">
+              {/* Banner Content (Hidden on mobile, visible on sm: screens and above) */}
+              <div className="hidden sm:flex relative z-10 max-w-[var(--container)] h-full mx-auto px-4 sm:px-8 lg:px-12 flex-col justify-center py-6 sm:py-10 text-white pointer-events-none">
+                <div className="max-w-xl space-y-2 sm:space-y-3.5 pointer-events-auto">
                   {/* Badge */}
                   <span
                     className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-[4px] text-[11px] font-extrabold uppercase tracking-wider shadow-sm ${slide.badgeBg}`}
