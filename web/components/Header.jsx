@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
@@ -12,6 +12,11 @@ export default function Header() {
   const router = useRouter();
   const pathname = usePathname();
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchParamsStr, setSearchParamsStr] = useState("");
+
+  useEffect(() => {
+    setSearchParamsStr(window.location.search);
+  }, [pathname]);
 
   const { items = [], openCart } = useCart(
     useShallow((state) => ({
@@ -126,7 +131,7 @@ export default function Header() {
         <div className="max-w-[var(--container)] mx-auto px-4 sm:px-6 lg:px-8">
           <ul className="flex items-center gap-5 sm:gap-7 overflow-x-auto no-scrollbar py-2.5 text-xs sm:text-sm font-semibold text-gray-700 whitespace-nowrap">
             {categorySubMenu.map((item) => {
-              const isActive = pathname + (typeof window !== "undefined" ? window.location.search : "") === item.href;
+              const isActive = pathname + searchParamsStr === item.href;
               return (
                 <li key={item.name} className="shrink-0">
                   <Link
