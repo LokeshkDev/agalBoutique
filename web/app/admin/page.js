@@ -16,6 +16,11 @@ import {
   CurrencyInr,
   Eye,
   SquaresFour,
+  MagnifyingGlass,
+  Funnel,
+  X,
+  CheckSquare,
+  Square,
 } from "@phosphor-icons/react";
 import ImageUploadInput from "@/components/ImageUploadInput";
 import {
@@ -27,6 +32,7 @@ import {
   adminCreateProduct,
   adminUpdateProduct,
   adminDeleteProduct,
+  adminBulkDeleteProducts,
   getCategories,
   adminCreateCategory,
   adminUpdateCategory,
@@ -97,12 +103,32 @@ export default function AdminPage() {
 
   const [cmsSaveStatus, setCmsSaveStatus] = useState("");
 
-  // Check initial login state
+  // Product Search, Filter, Bulk Select & View Modal States
+  const [productSearch, setProductSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("All");
+  const [badgeFilter, setBadgeFilter] = useState("All");
+  const [selectedProductIds, setSelectedProductIds] = useState([]);
+  const [viewingProduct, setViewingProduct] = useState(null);
+  const [showViewModal, setShowViewModal] = useState(false);
+
+  // Check initial login state & set up real-time orders polling (sync frontend orders)
   useEffect(() => {
     const token = localStorage.getItem("agal_admin_token");
     if (token) {
       setIsAuthenticated(true);
       loadAllData();
+
+      // Automatically sync incoming frontend orders & stats every 8 seconds
+      const pollTimer = setInterval(() => {
+        adminGetOrders().then((res) => {
+          if (res?.orders) setOrders(res.orders);
+        });
+        adminGetStats().then((res) => {
+          if (res?.stats) setStats(res.stats);
+        });
+      }, 8000);
+
+      return () => clearInterval(pollTimer);
     }
   }, []);
 
@@ -114,7 +140,7 @@ export default function AdminPage() {
       const ordersRes = await adminGetOrders();
       if (ordersRes?.orders) setOrders(ordersRes.orders);
 
-      const prodsRes = await getProducts({ limit: 100 });
+      const prodsRes = await getProducts({ limit: 200 });
       if (prodsRes?.products) setProducts(prodsRes.products);
 
       const catsRes = await getCategories();
@@ -271,6 +297,59 @@ export default function AdminPage() {
       await adminDeleteProduct(id);
       loadAllData();
     }
+  };
+
+  // Filter & Search product items
+  const filteredProducts = products.filter((p) => {
+    const matchSearch =
+      !productSearch.trim() ||
+      p.name?.toLowerCase().includes(productSearch.toLowerCase()) ||
+      String(p.id).toLowerCase().includes(productSearch.toLowerCase()) ||
+      p.category?.toLowerCase().includes(productSearch.toLowerCase()) ||
+      p.fabric?.toLowerCase().includes(productSearch.toLowerCase());
+
+    const matchCategory =
+      categoryFilter === "All" ||
+      p.category?.toLowerCase() === categoryFilter.toLowerCase();
+
+    const matchBadge =
+      badgeFilter === "All" ||
+      (badgeFilter === "new" && p.isNew) ||
+      (badgeFilter === "bestseller" && p.isBestseller);
+
+    return matchSearch && matchCategory && matchBadge;
+  });
+
+  // Bulk selection functions
+  const handleSelectAllProducts = (e) => {
+    if (e.target.checked) {
+      setSelectedProductIds(filteredProducts.map((p) => p.id));
+    } else {
+      setSelectedProductIds([]);
+    }
+  };
+
+  const handleToggleSelectProduct = (id) => {
+    if (selectedProductIds.includes(id)) {
+      setSelectedProductIds(selectedProductIds.filter((item) => item !== id));
+    } else {
+      setSelectedProductIds([...selectedProductIds, id]);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedProductIds.length === 0) return;
+    if (confirm(`Are you sure you want to delete ${selectedProductIds.length} selected products from DB?`)) {
+      await adminBulkDeleteProducts(selectedProductIds);
+      setSelectedProductIds([]);
+      loadAllData();
+    }
+  };
+
+  // Quick View Function
+  const handleOpenViewProduct = (p) => {
+    setViewingProduct(p);
+    setShowViewModal(true);
   };
 
   // Category Actions
@@ -594,25 +673,117 @@ export default function AdminPage() {
         {/* TAB 2: PRODUCTS MANAGEMENT */}
         {activeTab === "products" && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-gray-200">
-              <div>
-                <h2 className="text-base font-bold text-gray-900">Database Products</h2>
-                <p className="text-xs text-gray-500">Add, edit, or delete live boutique products in MySQL database.</p>
+            {/* Header + Search + Filter Controls */}
+            <div className="bg-white p-4 rounded-xl border border-gray-200 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-base font-bold text-gray-900">Database Products ({filteredProducts.length})</h2>
+                  <p className="text-xs text-gray-500">Search, filter, view, edit, or bulk delete products in MySQL database.</p>
+                </div>
+                <button
+                  onClick={handleOpenNewProduct}
+                  className="px-4 py-2.5 bg-plum text-white font-bold rounded-lg text-xs flex items-center gap-1.5 hover:bg-plum-900 transition-colors cursor-pointer shadow-xs shrink-0 self-start sm:self-auto"
+                >
+                  <Plus size={16} />
+                  <span>Add Product</span>
+                </button>
               </div>
-              <button
-                onClick={handleOpenNewProduct}
-                className="px-4 py-2.5 bg-plum text-white font-bold rounded-lg text-xs flex items-center gap-1.5 hover:bg-plum-900 transition-colors cursor-pointer shadow-xs"
-              >
-                <Plus size={16} />
-                <span>Add Product</span>
-              </button>
+
+              {/* Search & Filter Inputs Bar */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-gray-100">
+                {/* Search Bar */}
+                <div className="relative">
+                  <MagnifyingGlass size={16} className="absolute left-3 top-3 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search by title, ID, fabric..."
+                    value={productSearch}
+                    onChange={(e) => setProductSearch(e.target.value)}
+                    className="w-full h-10 pl-9 pr-3 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-plum"
+                  />
+                  {productSearch && (
+                    <button
+                      onClick={() => setProductSearch("")}
+                      className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 cursor-pointer"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Category Filter */}
+                <div className="flex items-center gap-2">
+                  <Funnel size={16} className="text-gray-400 shrink-0" />
+                  <select
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                    className="w-full h-10 px-3 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-plum bg-white"
+                  >
+                    <option value="All">All Categories</option>
+                    {categoriesList.map((cat) => (
+                      <option key={cat.id || cat.slug} value={cat.name}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Badge Filter */}
+                <div>
+                  <select
+                    value={badgeFilter}
+                    onChange={(e) => setBadgeFilter(e.target.value)}
+                    className="w-full h-10 px-3 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-plum bg-white"
+                  >
+                    <option value="All">All Badges</option>
+                    <option value="new">New Arrivals Only</option>
+                    <option value="bestseller">Bestsellers Only</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Bulk Delete Bar (Appears when items are selected) */}
+              {selectedProductIds.length > 0 && (
+                <div className="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-lg animate-fade-in text-xs">
+                  <span className="font-bold text-red-800">
+                    {selectedProductIds.length} {selectedProductIds.length === 1 ? "product" : "products"} selected for bulk action
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setSelectedProductIds([])}
+                      className="px-3 py-1.5 text-gray-600 hover:bg-red-100 rounded-md font-semibold cursor-pointer"
+                    >
+                      Cancel Selection
+                    </button>
+                    <button
+                      onClick={handleBulkDelete}
+                      className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-md flex items-center gap-1 shadow-xs cursor-pointer"
+                    >
+                      <Trash size={14} />
+                      <span>Bulk Delete ({selectedProductIds.length})</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            {/* Products Data Table */}
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-xs">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead className="bg-gray-50 border-b border-gray-200 text-gray-600 font-semibold uppercase text-[11px]">
                     <tr>
+                      <th className="py-3 px-4 w-10 text-center">
+                        <input
+                          type="checkbox"
+                          checked={
+                            filteredProducts.length > 0 &&
+                            selectedProductIds.length === filteredProducts.length
+                          }
+                          onChange={handleSelectAllProducts}
+                          className="w-4 h-4 rounded text-plum cursor-pointer"
+                        />
+                      </th>
                       <th className="py-3 px-4">Product</th>
                       <th className="py-3 px-4">Category</th>
                       <th className="py-3 px-4">Price / MRP</th>
@@ -621,57 +792,80 @@ export default function AdminPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {products.length === 0 ? (
+                    {filteredProducts.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="py-8 text-center text-gray-500 italic text-xs">
-                          No products in MySQL database. Click "Add Product" above to create your first item!
+                        <td colSpan={6} className="py-8 text-center text-gray-500 italic text-xs">
+                          No matching products found. Try adjusting your search or filters!
                         </td>
                       </tr>
                     ) : (
-                      products.map((p) => (
-                        <tr key={p.id} className="hover:bg-gray-50/80 transition-colors">
-                          <td className="py-3 px-4 flex items-center gap-3">
-                            <img
-                              src={p.images?.[0]?.url || "/logo.png"}
-                              alt={p.name}
-                              className="w-10 h-12 object-cover rounded bg-gray-100 shrink-0"
-                            />
-                            <div>
-                              <div className="font-bold text-gray-900">{p.name}</div>
-                              <div className="text-[11px] text-gray-400">ID: {p.id}</div>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 font-semibold text-gray-700">{p.category}</td>
-                          <td className="py-3 px-4">
-                            <span className="font-bold text-gray-900">₹{p.price}</span>
-                            {p.mrp && <span className="text-gray-400 line-through text-[11px] ml-1.5">₹{p.mrp}</span>}
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="flex items-center gap-1.5">
-                              {p.isNew && <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-1.5 py-0.5 rounded">NEW</span>}
-                              {p.isBestseller && <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-1.5 py-0.5 rounded">BESTSELLER</span>}
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <button
-                                onClick={() => handleOpenEditProduct(p)}
-                                className="p-1.5 text-gray-600 hover:text-plum hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-                                title="Edit"
-                              >
-                                <Pencil size={16} />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteProduct(p.id)}
-                                className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                                title="Delete"
-                              >
-                                <Trash size={16} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
+                      filteredProducts.map((p) => {
+                        const isSelected = selectedProductIds.includes(p.id);
+                        return (
+                          <tr
+                            key={p.id}
+                            className={`transition-colors ${
+                              isSelected ? "bg-plum/5" : "hover:bg-gray-50/80"
+                            }`}
+                          >
+                            <td className="py-3 px-4 text-center">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => handleToggleSelectProduct(p.id)}
+                                className="w-4 h-4 rounded text-plum cursor-pointer"
+                              />
+                            </td>
+                            <td className="py-3 px-4 flex items-center gap-3">
+                              <img
+                                src={p.images?.[0]?.url || "/logo.png"}
+                                alt={p.name}
+                                className="w-10 h-12 object-cover rounded bg-gray-100 shrink-0 border border-gray-200"
+                              />
+                              <div>
+                                <div className="font-bold text-gray-900">{p.name}</div>
+                                <div className="text-[11px] text-gray-400 font-mono">ID: {p.id}</div>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 font-semibold text-gray-700">{p.category}</td>
+                            <td className="py-3 px-4">
+                              <span className="font-bold text-gray-900">₹{p.price}</span>
+                              {p.mrp && <span className="text-gray-400 line-through text-[11px] ml-1.5">₹{p.mrp}</span>}
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-1.5">
+                                {p.isNew && <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-1.5 py-0.5 rounded">NEW</span>}
+                                {p.isBestseller && <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-1.5 py-0.5 rounded">BESTSELLER</span>}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  onClick={() => handleOpenViewProduct(p)}
+                                  className="p-1.5 text-gray-600 hover:text-plum hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                                  title="Quick View Details"
+                                >
+                                  <Eye size={16} />
+                                </button>
+                                <button
+                                  onClick={() => handleOpenEditProduct(p)}
+                                  className="p-1.5 text-gray-600 hover:text-plum hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                                  title="Edit Product"
+                                >
+                                  <Pencil size={16} />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteProduct(p.id)}
+                                  className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                                  title="Delete Product"
+                                >
+                                  <Trash size={16} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>
@@ -1367,6 +1561,141 @@ export default function AdminPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* PRODUCT QUICK VIEW DETAILS MODAL */}
+      {showViewModal && viewingProduct && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white max-w-2xl w-full rounded-2xl shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto relative">
+            <button
+              onClick={() => setShowViewModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-1.5 rounded-full hover:bg-gray-100 cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
+              <span className="bg-plum/10 text-plum font-bold text-xs px-2.5 py-0.5 rounded-full uppercase">
+                {viewingProduct.category}
+              </span>
+              <span className="text-xs text-gray-400 font-mono">ID: {viewingProduct.id}</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {/* Product Gallery Images Preview */}
+              <div className="space-y-3">
+                <img
+                  src={viewingProduct.images?.[0]?.url || "/logo.png"}
+                  alt={viewingProduct.name}
+                  className="w-full h-64 object-cover rounded-xl border border-gray-200 shadow-xs"
+                />
+                {viewingProduct.images?.length > 1 && (
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                    {viewingProduct.images.map((img, i) => (
+                      <img
+                        key={i}
+                        src={typeof img === "string" ? img : img.url}
+                        alt={`Gallery ${i + 1}`}
+                        className="w-14 h-16 object-cover rounded-lg border border-gray-200 shrink-0"
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Product Info Summary */}
+              <div className="space-y-3 text-xs">
+                <h3 className="text-lg font-bold text-gray-900 leading-snug">{viewingProduct.name}</h3>
+
+                <div className="p-3 rounded-lg bg-gray-50 border border-gray-200 flex items-baseline justify-between">
+                  <div>
+                    <span className="text-xl font-extrabold text-gray-900">₹{viewingProduct.price}</span>
+                    {viewingProduct.mrp && (
+                      <span className="text-xs text-gray-400 line-through ml-2">₹{viewingProduct.mrp}</span>
+                    )}
+                  </div>
+                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
+                    Rating: {viewingProduct.rating?.avg || "4.6"} ★ ({viewingProduct.rating?.count || "94"})
+                  </span>
+                </div>
+
+                {viewingProduct.fabric && (
+                  <div>
+                    <strong className="text-gray-900 block font-semibold mb-0.5">Fabric Details:</strong>
+                    <p className="text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">{viewingProduct.fabric}</p>
+                  </div>
+                )}
+
+                {viewingProduct.care && (
+                  <div>
+                    <strong className="text-gray-900 block font-semibold mb-0.5">Care Instructions:</strong>
+                    <p className="text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">{viewingProduct.care}</p>
+                  </div>
+                )}
+
+                {/* Colors */}
+                {viewingProduct.colors?.length > 0 && (
+                  <div>
+                    <strong className="text-gray-900 block font-semibold mb-1">Color Options:</strong>
+                    <div className="flex flex-wrap gap-1.5">
+                      {viewingProduct.colors.map((c, idx) => (
+                        <span key={idx} className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded font-medium border border-gray-200">
+                          {c}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Sizes & Stock */}
+                {viewingProduct.sizes?.length > 0 && (
+                  <div>
+                    <strong className="text-gray-900 block font-semibold mb-1">Sizes & Stock Levels:</strong>
+                    <div className="flex flex-wrap gap-1.5">
+                      {viewingProduct.sizes.map((s, idx) => (
+                        <span
+                          key={idx}
+                          className={`px-2 py-0.5 rounded border text-[11px] font-bold ${
+                            s.stock > 0
+                              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                              : "bg-red-50 text-red-600 border-red-200 line-through"
+                          }`}
+                        >
+                          {typeof s === "object" ? `${s.label} (${s.stock} in stock)` : s}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {viewingProduct.description && (
+                  <div>
+                    <strong className="text-gray-900 block font-semibold mb-0.5">Description:</strong>
+                    <p className="text-gray-600 leading-relaxed max-h-24 overflow-y-auto">{viewingProduct.description}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-200">
+              <button
+                onClick={() => {
+                  setShowViewModal(false);
+                  handleOpenEditProduct(viewingProduct);
+                }}
+                className="px-4 py-2 text-xs font-bold bg-plum text-white rounded-lg hover:bg-plum-900 transition-colors shadow-xs cursor-pointer flex items-center gap-1.5"
+              >
+                <Pencil size={15} /> Edit Product
+              </button>
+              <button
+                onClick={() => setShowViewModal(false)}
+                className="px-4 py-2 text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

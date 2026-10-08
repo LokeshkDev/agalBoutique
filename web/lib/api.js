@@ -130,6 +130,13 @@ export async function adminDeleteProduct(id) {
   });
 }
 
+export async function adminBulkDeleteProducts(ids) {
+  return await apiFetch("/products/bulk-delete", {
+    method: "POST",
+    body: JSON.stringify({ ids }),
+  });
+}
+
 export async function adminUpdateCmsSetting(key, value) {
   return await apiFetch("/cms/admin", {
     method: "PUT",

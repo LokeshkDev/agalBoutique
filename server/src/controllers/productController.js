@@ -370,4 +370,29 @@ export async function deleteProduct(req, res) {
   }
 }
 
+// POST /api/products/bulk-delete (Admin Only)
+export async function bulkDeleteProducts(req, res) {
+  try {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ success: false, message: "No product IDs provided" });
+    }
+
+    if (!pool || !isConnected) {
+      for (const id of ids) {
+        const idx = seedProducts.findIndex((p) => p.id === id);
+        if (idx !== -1) seedProducts.splice(idx, 1);
+      }
+      return res.json({ success: true, message: `${ids.length} products deleted (in-memory)` });
+    }
+
+    await pool.query("DELETE FROM products WHERE id IN (?)", [ids]);
+    res.json({ success: true, message: `${ids.length} products deleted successfully` });
+  } catch (err) {
+    console.error("Error in bulkDeleteProducts:", err);
+    res.status(500).json({ success: false, message: err.message || "Failed to bulk delete products" });
+  }
+}
+
+
 
