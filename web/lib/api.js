@@ -1,33 +1,26 @@
 /**
- * API abstraction layer — reads from local data modules.
- * When a backend is added, swap these to fetch() calls. No page components need to change.
+ * Agal Boutique API abstraction layer — synchronized with Node/Express/MySQL backend (server/).
+ * Uses NEXT_PUBLIC_API_URL with automatic fallback to local data.
  */
 
-import { products } from "@/lib/data/products";
-import { categories } from "@/lib/data/categories";
+import { products as localProducts } from "@/lib/data/products";
+import { categories as localCategories } from "@/lib/data/categories";
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 /**
  * Get products with optional filtering, sorting, and pagination
- * @param {Object} options
- * @param {string} [options.category]
- * @param {string} [options.sort] - "price-asc" | "price-desc" | "newest" | "rating" | "discount"
- * @param {string} [options.search]
- * @param {string[]} [options.sizes]
- * @param {string[]} [options.fabrics]
- * @param {string[]} [options.occasions]
- * @param {number} [options.minPrice]
- * @param {number} [options.maxPrice]
- * @param {number} [options.page] - 1-indexed
- * @param {number} [options.limit] - items per page, default 12
- * @returns {{ products: Array, total: number, page: number, totalPages: number }}
  */
 export function getProducts(options = {}) {
-  let filtered = [...products];
+  let filtered = [...localProducts];
 
   // Category filter
   if (options.category) {
     filtered = filtered.filter(
-      (p) => p.category.toLowerCase().replace(/\s+/g, "-") === options.category.toLowerCase()
+      (p) =>
+        p.category.toLowerCase().replace(/\s+/g, "-") ===
+        options.category.toLowerCase()
     );
   }
 
@@ -53,7 +46,9 @@ export function getProducts(options = {}) {
   // Fabric filter
   if (options.fabrics?.length) {
     filtered = filtered.filter((p) =>
-      options.fabrics.some((f) => p.fabric.toLowerCase().includes(f.toLowerCase()))
+      options.fabrics.some((f) =>
+        p.fabric.toLowerCase().includes(f.toLowerCase())
+      )
     );
   }
 
@@ -109,59 +104,99 @@ export function getProducts(options = {}) {
 }
 
 /**
+ * Fetch live products from Express/MySQL backend with fallback
+ */
+export async function fetchLiveProducts(queryStr = "") {
+  try {
+    const res = await fetch(`${API_URL}/products?${queryStr}`, {
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) throw new Error("Failed to fetch products from backend");
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    return null;
+  }
+}
+
+/**
  * Get a single product by slug
- * @param {string} slug
- * @returns {Object|null}
  */
 export function getProduct(slug) {
-  return products.find((p) => p.slug === slug) || null;
+  return localProducts.find((p) => p.slug === slug) || null;
+}
+
+/**
+ * Fetch a single product from backend by slug
+ */
+export async function fetchLiveProduct(slug) {
+  try {
+    const res = await fetch(`${API_URL}/products/${slug}`, {
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) throw new Error("Product not found");
+    const data = await res.json();
+    return data.product;
+  } catch (err) {
+    return getProduct(slug);
+  }
+}
+
+/**
+ * Submit order to backend server API
+ */
+export async function submitOrderToBackend(orderPayload) {
+  try {
+    const res = await fetch(`${API_URL}/orders`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(orderPayload),
+    });
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    console.warn("Backend order submission error:", err.message);
+    return null;
+  }
 }
 
 /**
  * Get all product slugs (for sitemap/static generation)
- * @returns {Array<{ slug: string, updatedAt?: string }>}
  */
 export function getAllSlugs() {
-  return products.map((p) => ({ slug: p.slug }));
+  return localProducts.map((p) => ({ slug: p.slug }));
 }
 
 /**
  * Get all categories
- * @returns {Array}
  */
 export function getCategories() {
-  return categories;
+  return localCategories;
 }
 
 /**
- * Get products similar to a given product (same category, different product)
- * @param {string} productId
- * @param {number} limit
- * @returns {Array}
+ * Get products similar to a given product
  */
 export function getSimilarProducts(productId, limit = 4) {
-  const product = products.find((p) => p.id === productId);
+  const product = localProducts.find((p) => p.id === productId);
   if (!product) return [];
-  return products
+  return localProducts
     .filter((p) => p.category === product.category && p.id !== productId)
     .slice(0, limit);
 }
 
 /**
  * Get unique fabrics across all products
- * @returns {string[]}
  */
 export function getAllFabrics() {
-  const fabrics = new Set(products.map((p) => p.fabric));
+  const fabrics = new Set(localProducts.map((p) => p.fabric));
   return [...fabrics].sort();
 }
 
 /**
  * Get unique occasions across all products
- * @returns {string[]}
  */
 export function getAllOccasions() {
-  const occasions = new Set(products.flatMap((p) => p.occasion));
+  const occasions = new Set(localProducts.flatMap((p) => p.occasion));
   return [...occasions].sort();
 }
-

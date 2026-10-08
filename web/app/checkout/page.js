@@ -19,6 +19,8 @@ import {
   Money,
 } from "@phosphor-icons/react";
 
+import { submitOrderToBackend } from "@/lib/api";
+
 export default function CheckoutPage() {
   const { items, clear } = useCart(
     useShallow((s) => ({ items: s.items || [], clear: s.clear }))
@@ -66,10 +68,31 @@ export default function CheckoutPage() {
     }
   };
 
-  const handlePlaceOrder = () => {
-    const randomOrderNum =
+  const handlePlaceOrder = async () => {
+    const payload = {
+      items: items.map((i) => ({
+        id: i.id,
+        name: i.name,
+        slug: i.slug,
+        price: i.price,
+        mrp: i.mrp,
+        size: i.size,
+        color: i.color,
+        qty: i.qty || i.quantity || 1,
+        image: i.image || i.images?.[0]?.url,
+        customStitching: i.customStitching || null,
+      })),
+      shippingAddress: address,
+      paymentMethod,
+    };
+
+    const backendRes = await submitOrderToBackend(payload);
+    const finalOrderNum =
+      backendRes?.orderNumber ||
+      backendRes?.order?.orderNumber ||
       "AGAL-" + Math.floor(100000 + Math.random() * 900000);
-    setOrderNumber(randomOrderNum);
+
+    setOrderNumber(finalOrderNum);
     setOrderComplete(true);
     clear();
   };
