@@ -329,6 +329,205 @@ export async function deleteOrder(req, res) {
   }
 }
 
+// POST /api/orders/:id/return (Admin Only)
+export async function processOrderReturn(req, res) {
+  try {
+    const { id } = req.params;
+    let order = null;
+
+    if (pool && isConnected) {
+      const [rows] = await pool.query("SELECT * FROM orders WHERE id = ? OR order_number = ? LIMIT 1", [id, id]);
+      if (rows.length > 0) order = rows[0];
+    } else {
+      order = inMemoryOrders.find((o) => o.orderNumber === id || String(o.id) === String(id));
+    }
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    let items = [];
+    try {
+      items = typeof order.items === "string" ? JSON.parse(order.items) : (order.items || []);
+    } catch (e) {
+      items = order.items || [];
+    }
+
+    // Restore stock for returned items
+    for (const item of items) {
+      const qtyToRestore = parseInt(item.qty || item.quantity || 1, 10);
+      const prodId = item.id;
+      const szLabel = item.size;
+      const colName = item.color;
+
+      if (pool && isConnected) {
+        const [pRows] = await pool.query("SELECT id, sizes FROM products WHERE id = ? OR slug = ? LIMIT 1", [prodId, item.slug || prodId]);
+        if (pRows.length > 0) {
+          const p = pRows[0];
+          let sizesArr = typeof p.sizes === "string" ? JSON.parse(p.sizes) : (p.sizes || []);
+          let updated = false;
+
+          sizesArr = sizesArr.map((s) => {
+            if (typeof s === "object") {
+              const matchSz = String(s.label) === String(szLabel);
+              const matchCol = !colName || !s.color || String(s.color).toLowerCase() === String(colName).toLowerCase();
+              if (matchSz && matchCol) {
+                updated = true;
+                return { ...s, stock: (parseInt(s.stock || 0, 10) + qtyToRestore) };
+              }
+            }
+            return s;
+          });
+
+          if (updated) {
+            await pool.query("UPDATE products SET sizes = ? WHERE id = ?", [JSON.stringify(sizesArr), p.id]);
+          }
+        }
+      }
+
+      // Also update in-memory seedProducts
+      const memProd = seedProducts.find((p) => p.id === prodId || p.slug === item.slug);
+      if (memProd && Array.isArray(memProd.sizes)) {
+        memProd.sizes = memProd.sizes.map((s) => {
+          if (typeof s === "object" && String(s.label) === String(szLabel)) {
+            return { ...s, stock: (parseInt(s.stock || 0, 10) + qtyToRestore) };
+          }
+          return s;
+        });
+      }
+    }
+
+    // Update order status
+    if (pool && isConnected) {
+      await pool.query(
+        "UPDATE orders SET order_status = 'returned', payment_status = 'refunded' WHERE id = ? OR order_number = ?",
+        [id, id]
+      );
+    } else {
+      order.orderStatus = "returned";
+      order.paymentStatus = "refunded";
+    }
+
+    res.json({ success: true, message: `Order #${id} marked as returned and item stock restored to inventory.` });
+  } catch (err) {
+    console.error("Error in processOrderReturn:", err);
+    res.status(500).json({ success: false, message: "Failed to process order return" });
+  }
+}
+
+// POST /api/orders/:id/replace (Admin Only)
+export async function processOrderReplace(req, res) {
+  try {
+    const { id } = req.params;
+    const { returnItemId, replacementProductId, replacementSize, replacementColor, qty = 1 } = req.body;
+
+    let order = null;
+    if (pool && isConnected) {
+      const [rows] = await pool.query("SELECT * FROM orders WHERE id = ? OR order_number = ? LIMIT 1", [id, id]);
+      if (rows.length > 0) order = rows[0];
+    } else {
+      order = inMemoryOrders.find((o) => o.orderNumber === id || String(o.id) === String(id));
+    }
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    let items = [];
+    try {
+      items = typeof order.items === "string" ? JSON.parse(order.items) : (order.items || []);
+    } catch (e) {
+      items = order.items || [];
+    }
+
+    const replaceQty = parseInt(qty, 10) || 1;
+
+    // 1. Restore stock of returned item
+    const originalItem = items.find((i) => i.id === returnItemId || String(i.id) === String(returnItemId)) || items[0];
+    if (originalItem) {
+      if (pool && isConnected) {
+        const [pRows] = await pool.query("SELECT id, sizes FROM products WHERE id = ? OR slug = ? LIMIT 1", [originalItem.id, originalItem.slug || originalItem.id]);
+        if (pRows.length > 0) {
+          const p = pRows[0];
+          let sizesArr = typeof p.sizes === "string" ? JSON.parse(p.sizes) : (p.sizes || []);
+          sizesArr = sizesArr.map((s) => {
+            if (typeof s === "object" && String(s.label) === String(originalItem.size)) {
+              return { ...s, stock: (parseInt(s.stock || 0, 10) + replaceQty) };
+            }
+            return s;
+          });
+          await pool.query("UPDATE products SET sizes = ? WHERE id = ?", [JSON.stringify(sizesArr), p.id]);
+        }
+      }
+    }
+
+    // 2. Validate & decrement stock of replacement item
+    const targetProdId = replacementProductId || originalItem?.id;
+    let replacementProd = null;
+
+    if (pool && isConnected) {
+      const [rRows] = await pool.query("SELECT id, name, sizes, price FROM products WHERE id = ? OR slug = ? LIMIT 1", [targetProdId, targetProdId]);
+      if (rRows.length > 0) replacementProd = rRows[0];
+    }
+
+    if (!replacementProd) {
+      replacementProd = seedProducts.find((p) => p.id === targetProdId || p.slug === targetProdId) || seedProducts[0];
+    }
+
+    if (replacementProd) {
+      let rSizes = typeof replacementProd.sizes === "string" ? JSON.parse(replacementProd.sizes) : (replacementProd.sizes || []);
+      const targetSize = replacementSize || originalItem?.size || "Free Size";
+      const targetColor = replacementColor || originalItem?.color || "";
+
+      let foundVariant = rSizes.find((s) => {
+        if (typeof s !== "object") return false;
+        const matchSz = String(s.label) === String(targetSize);
+        const matchCol = !targetColor || !s.color || String(s.color).toLowerCase() === String(targetColor).toLowerCase();
+        return matchSz && matchCol;
+      }) || rSizes.find((s) => typeof s === "object" && String(s.label) === String(targetSize));
+
+      const availableStock = foundVariant ? parseInt(foundVariant.stock || 0, 10) : 10;
+      if (availableStock < replaceQty) {
+        return res.status(400).json({
+          success: false,
+          message: `Insufficient stock for replacement variant (${targetSize} ${targetColor}). Available: ${availableStock}`,
+        });
+      }
+
+      // Decrement replacement stock
+      rSizes = rSizes.map((s) => {
+        if (typeof s === "object") {
+          const matchSz = String(s.label) === String(targetSize);
+          const matchCol = !targetColor || !s.color || String(s.color).toLowerCase() === String(targetColor).toLowerCase();
+          if (matchSz && matchCol) {
+            return { ...s, stock: Math.max(0, parseInt(s.stock || 0, 10) - replaceQty) };
+          }
+        }
+        return s;
+      });
+
+      if (pool && isConnected) {
+        await pool.query("UPDATE products SET sizes = ? WHERE id = ?", [JSON.stringify(rSizes), replacementProd.id]);
+      }
+    }
+
+    // Update order status
+    if (pool && isConnected) {
+      await pool.query("UPDATE orders SET order_status = 'replaced' WHERE id = ? OR order_number = ?", [id, id]);
+    } else {
+      order.orderStatus = "replaced";
+    }
+
+    res.json({
+      success: true,
+      message: `Order #${id} processed for replacement with variant (${replacementSize || originalItem?.size} ${replacementColor || originalItem?.color}). Stock updated.`,
+    });
+  } catch (err) {
+    console.error("Error in processOrderReplace:", err);
+    res.status(500).json({ success: false, message: "Failed to process order replacement" });
+  }
+}
+
 // GET /api/admin/stats (Admin Only)
 export async function getAdminStats(req, res) {
   try {
@@ -365,5 +564,6 @@ export async function getAdminStats(req, res) {
     res.status(500).json({ success: false, message: "Failed to fetch admin stats" });
   }
 }
+
 
 

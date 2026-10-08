@@ -24,3 +24,34 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Keyframe Animations for Section Reveals */
+@keyframes sectionFadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sectionScaleUp {
+  0% {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-section-reveal {
+  animation: sectionFadeInUp 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-section-scale {
+  animation: sectionScaleUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

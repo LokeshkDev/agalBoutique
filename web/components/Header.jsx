@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
-import { MagnifyingGlass, Handbag, Scissors, Truck } from "@phosphor-icons/react";
+import { MagnifyingGlass, Handbag, Scissors, Truck, Info, Phone } from "@phosphor-icons/react";
 import { useCart } from "@/store/cart";
 import { useShallow } from "zustand/react/shallow";
 
@@ -49,7 +49,8 @@ export default function Header() {
     { name: "Blouses & Stitching", href: "/shop?category=blouses" },
     { name: "Lehenga Sets", href: "/shop?category=lehengas" },
     { name: "Kids & Pattu Pavadai", href: "/shop?category=kidswear" },
-    { name: "Festive Offers", href: "/shop?sort=discount" },
+    { name: "About Us", href: "/about" },
+    { name: "Contact Us", href: "/contact" },
   ];
 
   return (
@@ -88,21 +89,34 @@ export default function Header() {
           </div>
         </form>
 
-        {/* Right Action Links (Meesho Layout) */}
-        <div className="flex items-center gap-3 sm:gap-6 shrink-0">
-          {/* Custom Stitching Link */}
+        {/* Right Action Links */}
+        <div className="flex items-center gap-2.5 sm:gap-4 shrink-0">
+          {/* About Us Link */}
           <Link
-            href="/shop?category=blouses"
-            className="hidden lg:flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-plum transition-colors"
+            href="/about"
+            className={`hidden sm:flex items-center gap-1 text-xs font-bold transition-colors ${
+              pathname === "/about" ? "text-plum font-extrabold" : "text-gray-700 hover:text-plum"
+            }`}
           >
-            <Scissors size={18} className="text-plum" />
-            <span>Custom Stitching</span>
+            <Info size={18} className="text-plum" />
+            <span>About Us</span>
+          </Link>
+
+          {/* Contact Link */}
+          <Link
+            href="/contact"
+            className={`hidden sm:flex items-center gap-1 text-xs font-bold transition-colors border-r border-gray-300 pr-3 ${
+              pathname === "/contact" ? "text-plum font-extrabold" : "text-gray-700 hover:text-plum"
+            }`}
+          >
+            <Phone size={18} className="text-plum" />
+            <span>Contact</span>
           </Link>
 
           {/* Track Order */}
           <Link
             href="/checkout"
-            className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-plum transition-colors border-r border-gray-300 pr-4"
+            className="hidden lg:flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-plum transition-colors border-r border-gray-300 pr-3"
           >
             <Truck size={18} className="text-gray-500" />
             <span>Track Order</span>

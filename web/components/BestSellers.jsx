@@ -22,7 +22,7 @@ export default function BestSellers() {
   if (bestSellers.length === 0) return null;
 
   return (
-    <section aria-labelledby="bestsellers-heading" className="py-8 lg:py-14 bg-white">
+    <section aria-labelledby="bestsellers-heading" className="py-8 lg:py-14 bg-white animate-section-reveal">
       <div className="max-w-[var(--container)] mx-auto px-4 lg:px-8">
         {/* Festive Coupon Strip */}
         <div className="mb-6 p-3 sm:p-4 rounded-[5px] bg-[#fff0f4] border border-[#ffccd8] flex flex-wrap items-center justify-between gap-3 shadow-xs">

@@ -154,18 +154,10 @@ export default function QuickViewModal({ product, open, onClose }) {
                 )}
               </div>
 
-              {/* Rating + Delivery Badge */}
-              <div className="flex items-center gap-3">
-                {product.rating?.count > 0 && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[5px] bg-[#238b45] text-white text-xs font-bold">
-                    {product.rating.avg} <Star size={11} weight="fill" />
-                  </span>
-                )}
-                <span className="text-xs font-medium text-gray-500">
-                  {product.rating?.count || 0} Ratings
-                </span>
-                <span className="text-xs font-bold text-[#038a41] bg-[#e6f4ea] px-2 py-0.5 rounded-[5px]">
-                  Free Delivery
+              {/* Free Delivery Badge */}
+              <div>
+                <span className="text-xs font-bold text-[#038a41] bg-[#e6f4ea] px-2.5 py-1 rounded-[5px] inline-block">
+                  Free Delivery Across India
                 </span>
               </div>
 
@@ -213,44 +205,64 @@ export default function QuickViewModal({ product, open, onClose }) {
               )}
 
               {/* Size Selection */}
-              {product.sizes?.length > 0 && (
-                <div className="space-y-1.5 pt-1">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="font-bold text-gray-900">Select Size:</span>
-                    {sizeError && (
-                      <span className="text-crimson font-bold text-[11px]">
-                        Please choose a size
-                      </span>
-                    )}
+              {product.sizes?.length > 0 && (() => {
+                const uniqueSizes = Array.from(
+                  new Set(
+                    product.sizes.map((s) => (typeof s === "object" ? s.label : String(s)))
+                  )
+                );
+
+                return (
+                  <div className="space-y-1.5 pt-1">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="font-bold text-gray-900">Select Size:</span>
+                      {sizeError && (
+                        <span className="text-crimson font-bold text-[11px]">
+                          Please choose a size
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {uniqueSizes.map((szLabel) => {
+                        const exactVar = product.sizes.find(
+                          (v) =>
+                            typeof v === "object" &&
+                            String(v.label) === String(szLabel) &&
+                            (!v.color || !selectedColor || String(v.color).toLowerCase() === String(selectedColor).toLowerCase())
+                        ) || product.sizes.find((v) => typeof v === "object" && String(v.label) === String(szLabel));
+
+                        const szStock = exactVar && exactVar.stock !== undefined ? parseInt(exactVar.stock, 10) : 10;
+                        const isSelected = selectedSize === szLabel;
+                        const szOut = szStock <= 0;
+
+                        return (
+                          <button
+                            key={szLabel}
+                            type="button"
+                            disabled={szOut}
+                            onClick={() => {
+                              if (!szOut) {
+                                setSelectedSize(szLabel);
+                                setSizeError(false);
+                              }
+                            }}
+                            className={`h-9 min-w-[40px] px-3 rounded-[5px] text-xs font-bold transition-all border ${
+                              isSelected && !szOut
+                                ? "bg-plum text-white border-plum shadow-xs font-extrabold"
+                                : szOut
+                                ? "bg-gray-100 text-gray-400 border-gray-200 line-through cursor-not-allowed opacity-60"
+                                : "bg-white text-gray-800 border-gray-300 hover:border-plum cursor-pointer"
+                            }`}
+                            title={szOut ? `${szLabel} (Out of Stock)` : szLabel}
+                          >
+                            {szLabel}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {product.sizes.map((s) => {
-                      const isSelected = selectedSize === s.label;
-                      const isOutOfStock = s.stock <= 0;
-                      return (
-                        <button
-                          key={s.label}
-                          type="button"
-                          disabled={isOutOfStock}
-                          onClick={() => {
-                            setSelectedSize(s.label);
-                            setSizeError(false);
-                          }}
-                          className={`h-9 min-w-[40px] px-3 rounded-[5px] text-xs font-bold transition-colors cursor-pointer border ${
-                            isSelected
-                              ? "bg-plum text-white border-plum shadow-xs"
-                              : isOutOfStock
-                              ? "bg-gray-100 text-gray-400 border-gray-200 line-through cursor-not-allowed"
-                              : "bg-white text-gray-800 border-gray-300 hover:border-plum"
-                          }`}
-                        >
-                          {s.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* CTA Buttons & Quantity Stepper */}
               <div className="pt-3 space-y-2">
@@ -260,7 +272,7 @@ export default function QuickViewModal({ product, open, onClose }) {
                     <button
                       type="button"
                       onClick={decrementQty}
-                      disabled={qty <= 1}
+                      disabled={qty <= 1 || isOutOfStock}
                       aria-label="Decrease quantity"
                       className="w-7 h-full flex items-center justify-center text-gray-700 font-bold disabled:opacity-30 cursor-pointer"
                     >
@@ -272,7 +284,7 @@ export default function QuickViewModal({ product, open, onClose }) {
                     <button
                       type="button"
                       onClick={incrementQty}
-                      disabled={qty >= 10}
+                      disabled={qty >= 10 || isOutOfStock}
                       aria-label="Increase quantity"
                       className="w-7 h-full flex items-center justify-center text-gray-700 font-bold disabled:opacity-30 cursor-pointer"
                     >
@@ -284,11 +296,20 @@ export default function QuickViewModal({ product, open, onClose }) {
                   <button
                     type="button"
                     onClick={handleAddToCart}
-                    className="flex-1 h-11 rounded-[5px] bg-[#9c27b0] hover:bg-[#8e24aa] text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-colors cursor-pointer active:scale-98"
+                    disabled={isOutOfStock}
+                    className={`flex-1 h-11 rounded-[5px] font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-all ${
+                      isOutOfStock
+                        ? "bg-gray-300 text-gray-500 border border-gray-300 cursor-not-allowed shadow-none"
+                        : "bg-[#9c27b0] hover:bg-[#8e24aa] text-white cursor-pointer active:scale-98"
+                    }`}
                   >
                     {addedSuccess ? (
                       <>
                         <Check size={18} weight="bold" /> Added to Bag!
+                      </>
+                    ) : isOutOfStock ? (
+                      <>
+                        <Handbag size={18} weight="bold" /> Out of Stock
                       </>
                     ) : (
                       <>

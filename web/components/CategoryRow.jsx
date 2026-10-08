@@ -21,7 +21,7 @@ export default function CategoryRow() {
   if (categories.length === 0) return null;
 
   return (
-    <section aria-labelledby="categories-heading" className="py-6 lg:py-10 bg-white">
+    <section aria-labelledby="categories-heading" className="py-6 lg:py-10 bg-white animate-section-reveal">
       <div className="max-w-[var(--container)] mx-auto px-4 lg:px-8">
         {/* Section Header */}
         <div className="flex items-baseline justify-between mb-6">

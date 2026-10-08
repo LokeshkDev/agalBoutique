@@ -97,7 +97,7 @@ export default async function ProductPage({ params }) {
     <>
       <JsonLd data={productLd} />
 
-      <div className="max-w-[var(--container)] mx-auto px-4 lg:px-8 py-4 lg:py-8 pb-32 lg:pb-8">
+      <div className="max-w-[var(--container)] mx-auto px-4 lg:px-8 py-4 lg:py-8 pb-32 lg:pb-8 animate-section-reveal">
         {/* Breadcrumbs */}
         <nav aria-label="Breadcrumbs" className="text-xs text-gray-500 mb-4 font-medium">
           <ol className="flex items-center gap-1.5 flex-wrap">
@@ -158,30 +158,7 @@ export default async function ProductPage({ params }) {
                   </>
                 )}
               </div>
-              <p className="text-[11px] text-gray-500 font-medium">Inclusive of all taxes · Free Delivery on this item</p>
-            </div>
-
-            {/* Rating + Reviews Badge */}
-            {product.rating?.count > 0 && (
-              <div className="flex items-center gap-3">
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[4px] bg-[#238b45] text-white text-xs font-bold shadow-xs">
-                  {product.rating.avg} <Star size={12} weight="fill" />
-                </span>
-                <span className="text-xs text-gray-600 font-semibold">
-                  {product.rating.count} Ratings & Verified Reviews
-                </span>
-              </div>
-            )}
-
-            {/* Bank / Coupon Offer Strip */}
-            <div className="p-3 rounded-[5px] bg-[#fff0f4] border border-[#ffccd8] flex items-center justify-between text-xs font-bold text-crimson-700">
-              <div className="flex items-center gap-2">
-                <Tag size={16} weight="fill" className="text-crimson shrink-0" />
-                <span>Special 15% OFF Coupon Available</span>
-              </div>
-              <span className="px-2 py-0.5 rounded-[3px] bg-white border border-crimson/30 font-mono text-[11px] text-crimson">
-                FESTIVE15
-              </span>
+              <p className="text-[11px] text-gray-500 font-medium">Inclusive of all taxes</p>
             </div>
 
             {/* Product Summary */}

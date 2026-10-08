@@ -95,15 +95,6 @@ export default function ProductCard({ product, priority = false }) {
             </button>
           </div>
 
-          {/* Floating Rating Pill on Image (Bottom-Left) */}
-          {rating?.count > 0 && (
-            <div className="absolute bottom-2 left-2 flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] bg-white/95 backdrop-blur-xs text-gray-800 text-[11px] font-bold shadow-xs">
-              <span className="text-[#238b45] font-extrabold">{rating.avg}</span>
-              <Star size={10} weight="fill" className="text-[#238b45]" />
-              <span className="text-gray-400 font-normal">| {rating.count}</span>
-            </div>
-          )}
-
           {/* Floating Color Options Badge on Image (Bottom-Right) */}
           {colors.length > 0 && (
             <div className="absolute bottom-2 right-2 flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] bg-white/95 backdrop-blur-xs text-gray-800 text-[10px] font-bold shadow-xs">

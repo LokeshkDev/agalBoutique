@@ -94,7 +94,7 @@ export default function TestimonialsSlider() {
   return (
     <section
       aria-labelledby="testimonials-heading"
-      className="py-12 lg:py-16 bg-[#faf5f8] border-t border-line overflow-hidden"
+      className="py-12 lg:py-16 bg-[#faf5f8] border-t border-line overflow-hidden animate-section-reveal"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >

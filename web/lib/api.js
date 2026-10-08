@@ -18,6 +18,7 @@ async function apiFetch(endpoint, options = {}) {
 
   try {
     const res = await fetch(url, {
+      cache: "no-store",
       ...options,
       headers: {
         ...defaultHeaders,
@@ -113,6 +114,19 @@ export async function adminUpdateOrderStatus(orderId, orderStatus, paymentStatus
 export async function adminDeleteOrder(orderId) {
   return await apiFetch(`/orders/${orderId}`, {
     method: "DELETE",
+  });
+}
+
+export async function adminReturnOrder(orderId) {
+  return await apiFetch(`/orders/${orderId}/return`, {
+    method: "POST",
+  });
+}
+
+export async function adminReplaceOrder(orderId, replacePayload) {
+  return await apiFetch(`/orders/${orderId}/replace`, {
+    method: "POST",
+    body: JSON.stringify(replacePayload),
   });
 }
 

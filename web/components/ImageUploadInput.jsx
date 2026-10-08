@@ -4,7 +4,7 @@ import { useState } from "react";
 import { UploadSimple, CheckCircle, Spinner, Image as ImageIcon } from "@phosphor-icons/react";
 import { adminUploadImage } from "@/lib/api";
 
-export default function ImageUploadInput({ label = "Image", value = "", onChange }) {
+export default function ImageUploadInput({ label = "Image", value = "", onChange, recommendedSize = "" }) {
   const [uploading, setUploading] = useState(false);
   const [uploadStats, setUploadStats] = useState(null);
   const [error, setError] = useState("");
@@ -35,7 +35,14 @@ export default function ImageUploadInput({ label = "Image", value = "", onChange
 
   return (
     <div className="space-y-1.5 font-sans">
-      <label className="block text-xs font-semibold text-gray-700">{label}</label>
+      <div className="flex items-center justify-between">
+        <label className="block text-xs font-semibold text-gray-700">{label}</label>
+        {recommendedSize && (
+          <span className="text-[10px] font-bold text-plum bg-plum/10 px-2 py-0.5 rounded border border-plum/20">
+            📐 Rec. Size: {recommendedSize}
+          </span>
+        )}
+      </div>
 
       <div className="space-y-2">
         <div className="flex items-center gap-2">

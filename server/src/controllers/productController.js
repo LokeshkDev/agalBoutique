@@ -193,57 +193,80 @@ export async function createProduct(req, res) {
     const id = `prod-${Date.now()}`;
     const generatedSlug = slug || name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
-    if (!pool || !isConnected) {
-      const newProduct = {
-        id,
-        slug: generatedSlug,
-        name,
-        category,
-        description,
-        fabric,
-        care,
-        occasion: occasion || [],
-        price: parseFloat(price),
-        mrp: mrp ? parseFloat(mrp) : null,
-        sizes: sizes || [],
-        colors: colors || [],
-        images: images || [],
-        rating: { avg: parseFloat(ratingAvg), count: parseInt(ratingCount) },
-        isNew: Boolean(isNew),
-        isBestseller: Boolean(isBestseller),
-      };
-      seedProducts.push(newProduct);
-      return res.status(201).json({ success: true, product: newProduct });
+    const newProductObj = {
+      id,
+      slug: generatedSlug,
+      name,
+      category,
+      description: description || "",
+      fabric: fabric || "",
+      care: care || "",
+      occasion: occasion || [],
+      price: parseFloat(price || 0),
+      mrp: mrp ? parseFloat(mrp) : null,
+      sizes: sizes || [],
+      colors: colors || [],
+      images: images || [],
+      rating: { avg: parseFloat(ratingAvg || 4.6), count: parseInt(ratingCount || 94) },
+      isNew: Boolean(isNew),
+      isBestseller: Boolean(isBestseller),
+    };
+
+    // Always update in-memory array so product reflects instantly in fallbacks
+    const existingIdx = seedProducts.findIndex((p) => p.id === id || p.slug === generatedSlug);
+    if (existingIdx !== -1) {
+      seedProducts[existingIdx] = newProductObj;
+    } else {
+      seedProducts.unshift(newProductObj);
     }
 
-    await pool.query(
-      `INSERT INTO products (id, slug, name, category_name, description, fabric, care, occasion, price, mrp, sizes, colors, images, rating_avg, rating_count, is_new, is_bestseller)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        id,
-        generatedSlug,
-        name,
-        category,
-        description,
-        fabric,
-        care,
-        JSON.stringify(occasion || []),
-        price,
-        mrp || null,
-        JSON.stringify(sizes || []),
-        JSON.stringify(colors || []),
-        JSON.stringify(images || []),
-        parseFloat(ratingAvg),
-        parseInt(ratingCount),
-        isNew ? 1 : 0,
-        isBestseller ? 1 : 0,
-      ]
-    );
+    if (pool && isConnected) {
+      await pool.query(
+        `INSERT INTO products (id, slug, name, category_name, description, fabric, care, occasion, price, mrp, sizes, colors, images, rating_avg, rating_count, is_new, is_bestseller)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE
+           slug = VALUES(slug),
+           name = VALUES(name),
+           category_name = VALUES(category_name),
+           description = VALUES(description),
+           fabric = VALUES(fabric),
+           care = VALUES(care),
+           occasion = VALUES(occasion),
+           price = VALUES(price),
+           mrp = VALUES(mrp),
+           sizes = VALUES(sizes),
+           colors = VALUES(colors),
+           images = VALUES(images),
+           rating_avg = VALUES(rating_avg),
+           rating_count = VALUES(rating_count),
+           is_new = VALUES(is_new),
+           is_bestseller = VALUES(is_bestseller)`,
+        [
+          id,
+          generatedSlug,
+          name,
+          category,
+          description || "",
+          fabric || "",
+          care || "",
+          JSON.stringify(occasion || []),
+          parseFloat(price || 0),
+          mrp ? parseFloat(mrp) : null,
+          JSON.stringify(sizes || []),
+          JSON.stringify(colors || []),
+          JSON.stringify(images || []),
+          parseFloat(ratingAvg || 4.6),
+          parseInt(ratingCount || 94),
+          isNew ? 1 : 0,
+          isBestseller ? 1 : 0,
+        ]
+      );
+    }
 
     res.status(201).json({
       success: true,
       message: "Product created successfully",
-      product: { id, slug: generatedSlug, name, category, price },
+      product: newProductObj,
     });
   } catch (err) {
     console.error("Error in createProduct:", err);
@@ -275,74 +298,78 @@ export async function updateProduct(req, res) {
       isActive = true,
     } = req.body;
 
-    if (!pool || !isConnected) {
-      const idx = seedProducts.findIndex((p) => p.id === id);
-      if (idx !== -1) {
-        seedProducts[idx] = {
-          ...seedProducts[idx],
-          name: name || seedProducts[idx].name,
-          slug: slug || seedProducts[idx].slug,
-          category: category || seedProducts[idx].category,
-          description: description || seedProducts[idx].description,
-          fabric: fabric || seedProducts[idx].fabric,
-          care: care || seedProducts[idx].care,
-          price: price ? parseFloat(price) : seedProducts[idx].price,
-          mrp: mrp ? parseFloat(mrp) : seedProducts[idx].mrp,
-          sizes: sizes || seedProducts[idx].sizes,
-          colors: colors || seedProducts[idx].colors,
-          images: images || seedProducts[idx].images,
-          rating: {
-            avg: ratingAvg !== undefined ? parseFloat(ratingAvg) : seedProducts[idx].rating?.avg || 4.5,
-            count: ratingCount !== undefined ? parseInt(ratingCount) : seedProducts[idx].rating?.count || 10,
-          },
-          isNew: isNew !== undefined ? Boolean(isNew) : seedProducts[idx].isNew,
-          isBestseller: isBestseller !== undefined ? Boolean(isBestseller) : seedProducts[idx].isBestseller,
-        };
-      }
-      return res.json({ success: true, message: "Product updated successfully (in-memory)" });
+    const updatedSlug = slug || (name ? name.toLowerCase().replace(/[^a-z0-9]+/g, "-") : id);
+
+    // Always update in-memory array so product reflects instantly in fallbacks
+    const idx = seedProducts.findIndex((p) => p.id === id || p.slug === id);
+    if (idx !== -1) {
+      seedProducts[idx] = {
+        ...seedProducts[idx],
+        name: name || seedProducts[idx].name,
+        slug: updatedSlug,
+        category: category || seedProducts[idx].category,
+        description: description !== undefined ? description : seedProducts[idx].description,
+        fabric: fabric !== undefined ? fabric : seedProducts[idx].fabric,
+        care: care !== undefined ? care : seedProducts[idx].care,
+        occasion: occasion || seedProducts[idx].occasion,
+        price: price ? parseFloat(price) : seedProducts[idx].price,
+        mrp: mrp !== undefined ? (mrp ? parseFloat(mrp) : null) : seedProducts[idx].mrp,
+        sizes: sizes || seedProducts[idx].sizes,
+        colors: colors || seedProducts[idx].colors,
+        images: images || seedProducts[idx].images,
+        rating: {
+          avg: ratingAvg !== undefined ? parseFloat(ratingAvg) : seedProducts[idx].rating?.avg || 4.5,
+          count: ratingCount !== undefined ? parseInt(ratingCount) : seedProducts[idx].rating?.count || 10,
+        },
+        isNew: isNew !== undefined ? Boolean(isNew) : seedProducts[idx].isNew,
+        isBestseller: isBestseller !== undefined ? Boolean(isBestseller) : seedProducts[idx].isBestseller,
+      };
     }
 
-    await pool.query(
-      `UPDATE products SET
-        name = ?,
-        slug = ?,
-        category_name = ?,
-        description = ?,
-        fabric = ?,
-        care = ?,
-        occasion = ?,
-        price = ?,
-        mrp = ?,
-        sizes = ?,
-        colors = ?,
-        images = ?,
-        rating_avg = COALESCE(?, rating_avg),
-        rating_count = COALESCE(?, rating_count),
-        is_new = ?,
-        is_bestseller = ?,
-        is_active = ?
-       WHERE id = ?`,
-      [
-        name,
-        slug,
-        category,
-        description,
-        fabric,
-        care,
-        JSON.stringify(occasion || []),
-        price,
-        mrp || null,
-        JSON.stringify(sizes || []),
-        JSON.stringify(colors || []),
-        JSON.stringify(images || []),
-        ratingAvg !== undefined ? parseFloat(ratingAvg) : null,
-        ratingCount !== undefined ? parseInt(ratingCount) : null,
-        isNew ? 1 : 0,
-        isBestseller ? 1 : 0,
-        isActive ? 1 : 0,
-        id,
-      ]
-    );
+    if (pool && isConnected) {
+      await pool.query(
+        `UPDATE products SET
+          name = ?,
+          slug = ?,
+          category_name = ?,
+          description = ?,
+          fabric = ?,
+          care = ?,
+          occasion = ?,
+          price = ?,
+          mrp = ?,
+          sizes = ?,
+          colors = ?,
+          images = ?,
+          rating_avg = COALESCE(?, rating_avg),
+          rating_count = COALESCE(?, rating_count),
+          is_new = ?,
+          is_bestseller = ?,
+          is_active = ?
+         WHERE id = ? OR slug = ?`,
+        [
+          name,
+          updatedSlug,
+          category,
+          description || "",
+          fabric || "",
+          care || "",
+          JSON.stringify(occasion || []),
+          parseFloat(price || 0),
+          mrp ? parseFloat(mrp) : null,
+          JSON.stringify(sizes || []),
+          JSON.stringify(colors || []),
+          JSON.stringify(images || []),
+          ratingAvg !== undefined ? parseFloat(ratingAvg) : null,
+          ratingCount !== undefined ? parseInt(ratingCount) : null,
+          isNew ? 1 : 0,
+          isBestseller ? 1 : 0,
+          isActive ? 1 : 0,
+          id,
+          id,
+        ]
+      );
+    }
 
     res.json({ success: true, message: "Product updated successfully" });
   } catch (err) {

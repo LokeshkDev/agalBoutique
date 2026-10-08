@@ -83,7 +83,7 @@ export default async function ShopPage({ searchParams }) {
     <>
       <JsonLd data={itemListSchema} />
 
-      <div className="max-w-[var(--container)] mx-auto px-4 lg:px-8 py-6 lg:py-8">
+      <div className="max-w-[var(--container)] mx-auto px-4 lg:px-8 py-6 lg:py-8 animate-section-reveal">
         {/* Header with Title & Item Count */}
         <div className="mb-4">
           <div className="flex items-baseline gap-2.5">

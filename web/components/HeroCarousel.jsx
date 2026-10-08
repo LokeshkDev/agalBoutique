@@ -128,44 +128,25 @@ export default function HeroCarousel() {
                 <div className="hidden sm:block absolute inset-0 bg-gradient-to-r from-black/90 via-black/65 to-black/30 sm:to-transparent" />
               </Link>
 
-              {/* Banner Content (Visible on sm: screens and above) */}
-              <div className="hidden sm:flex relative z-10 max-w-[var(--container)] h-full mx-auto px-4 sm:px-8 lg:px-12 flex-col justify-center py-6 sm:py-10 text-white pointer-events-none">
-                <div className="max-w-xl space-y-2 sm:space-y-3.5 pointer-events-auto">
-                  {/* Badge */}
-                  {slide.badge && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-[4px] text-[11px] font-extrabold uppercase tracking-wider shadow-sm bg-white text-plum">
-                      <Sparkle size={12} weight="fill" /> {slide.badge}
-                    </span>
-                  )}
-
-                  {/* Title */}
-                  <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight leading-tight text-white !text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]">
+              {/* Animated Banner Content (Title + Button only) */}
+              <div className="flex relative z-10 max-w-[var(--container)] h-full mx-auto px-4 sm:px-8 lg:px-12 flex-col justify-center py-6 sm:py-10 text-white pointer-events-none">
+                <div
+                  className={`max-w-2xl space-y-4 pointer-events-auto transition-all duration-700 delay-150 ease-out transform ${
+                    isActive ? "translate-y-0 opacity-100 scale-100" : "translate-y-8 opacity-0 scale-95"
+                  }`}
+                >
+                  {/* Animated Title */}
+                  <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight text-white !text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)]">
                     {slide.title}
                   </h2>
 
-                  {/* Subtitle */}
-                  {slide.subtitle && (
-                    <p className="text-xs sm:text-sm lg:text-base text-gray-100 font-medium line-clamp-2 sm:line-clamp-none drop-shadow-sm">
-                      {slide.subtitle}
-                    </p>
-                  )}
-
-                  {/* Offer highlight */}
-                  {slide.offer && (
-                    <div className="pt-0.5">
-                      <span className="inline-block px-3 py-1 rounded-[4px] bg-white/20 backdrop-blur-xs text-xs sm:text-sm font-bold text-white border border-white/40 shadow-xs">
-                        {slide.offer}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* CTA button */}
-                  <div className="pt-2">
+                  {/* Animated CTA button */}
+                  <div className="pt-1">
                     <Link
                       href={slide.link || "/shop"}
-                      className="inline-flex items-center justify-center h-10 sm:h-12 px-6 sm:px-8 rounded-[5px] bg-white text-gray-950 font-extrabold text-xs sm:text-sm shadow-md hover:bg-gray-100 active:scale-95 transition-all cursor-pointer"
+                      className="inline-flex items-center justify-center h-11 sm:h-13 px-7 sm:px-9 rounded-[5px] bg-white text-plum-900 font-black text-xs sm:text-sm shadow-xl hover:bg-gray-100 hover:scale-105 active:scale-95 transition-all cursor-pointer border border-white/40"
                     >
-                      {slide.cta || "Shop Now"} →
+                      {slide.cta || "Shop Collection"} →
                     </Link>
                   </div>
                 </div>
