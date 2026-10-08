@@ -166,21 +166,49 @@ export async function getOrder(req, res) {
     }
 
     const r = rows[0];
+    let addr = {};
+    try {
+      addr = typeof r.shipping_address === "string" ? JSON.parse(r.shipping_address) : (r.shipping_address || {});
+    } catch (e) {
+      addr = {};
+    }
+
+    let items = [];
+    try {
+      items = typeof r.items === "string" ? JSON.parse(r.items) : (r.items || []);
+    } catch (e) {
+      items = [];
+    }
+
+    const cName = r.customer_name || addr.name || addr.customerName || "Boutique Customer";
+    const cPhone = r.customer_phone || addr.phone || addr.customerPhone || "";
+    const cEmail = r.customer_email || addr.email || addr.customerEmail || "";
+
     const order = {
+      id: r.id,
       orderNumber: r.order_number,
-      customerName: r.customer_name,
-      customerPhone: r.customer_phone,
-      customerEmail: r.customer_email,
-      shippingAddress: typeof r.shipping_address === "string" ? JSON.parse(r.shipping_address) : r.shipping_address,
-      subtotal: parseFloat(r.subtotal),
-      shippingFee: parseFloat(r.shipping_fee),
-      codFee: parseFloat(r.cod_fee),
-      totalAmount: parseFloat(r.total_amount),
-      paymentMethod: r.payment_method,
-      paymentStatus: r.payment_status,
-      orderStatus: r.order_status,
-      items: typeof r.items === "string" ? JSON.parse(r.items) : r.items,
-      createdAt: r.created_at,
+      customerName: cName,
+      customerPhone: cPhone,
+      customerEmail: cEmail,
+      shippingAddress: {
+        name: addr.name || cName,
+        phone: addr.phone || cPhone,
+        email: addr.email || cEmail,
+        line1: addr.line1 || addr.address || addr.street || "",
+        city: addr.city || "",
+        state: addr.state || "",
+        pin: addr.pin || addr.pincode || addr.zip || "",
+        tag: addr.tag || "Home",
+      },
+      subtotal: parseFloat(r.subtotal || 0),
+      shippingFee: parseFloat(r.shipping_fee || 0),
+      codFee: parseFloat(r.cod_fee || 0),
+      totalAmount: parseFloat(r.total_amount || 0),
+      paymentMethod: r.payment_method || "online",
+      paymentStatus: r.payment_status || "pending",
+      orderStatus: r.order_status || "confirmed",
+      items: Array.isArray(items) ? items : [],
+      createdAt: r.created_at || new Date().toISOString(),
     };
 
     res.json({ success: true, order });
@@ -198,23 +226,52 @@ export async function getAllOrders(req, res) {
     }
 
     const [rows] = await pool.query("SELECT * FROM orders ORDER BY created_at DESC LIMIT 100");
-    const formatted = rows.map((r) => ({
-      id: r.id,
-      orderNumber: r.order_number,
-      customerName: r.customer_name,
-      customerPhone: r.customer_phone,
-      customerEmail: r.customer_email,
-      shippingAddress: typeof r.shipping_address === "string" ? JSON.parse(r.shipping_address) : r.shipping_address,
-      subtotal: parseFloat(r.subtotal),
-      shippingFee: parseFloat(r.shipping_fee),
-      codFee: parseFloat(r.cod_fee),
-      totalAmount: parseFloat(r.total_amount),
-      paymentMethod: r.payment_method,
-      paymentStatus: r.payment_status,
-      orderStatus: r.order_status,
-      items: typeof r.items === "string" ? JSON.parse(r.items) : r.items,
-      createdAt: r.created_at,
-    }));
+    const formatted = rows.map((r) => {
+      let addr = {};
+      try {
+        addr = typeof r.shipping_address === "string" ? JSON.parse(r.shipping_address) : (r.shipping_address || {});
+      } catch (e) {
+        addr = {};
+      }
+
+      let items = [];
+      try {
+        items = typeof r.items === "string" ? JSON.parse(r.items) : (r.items || []);
+      } catch (e) {
+        items = [];
+      }
+
+      const cName = r.customer_name || addr.name || addr.customerName || "Boutique Customer";
+      const cPhone = r.customer_phone || addr.phone || addr.customerPhone || "";
+      const cEmail = r.customer_email || addr.email || addr.customerEmail || "";
+
+      return {
+        id: r.id,
+        orderNumber: r.order_number,
+        customerName: cName,
+        customerPhone: cPhone,
+        customerEmail: cEmail,
+        shippingAddress: {
+          name: addr.name || cName,
+          phone: addr.phone || cPhone,
+          email: addr.email || cEmail,
+          line1: addr.line1 || addr.address || addr.street || "",
+          city: addr.city || "",
+          state: addr.state || "",
+          pin: addr.pin || addr.pincode || addr.zip || "",
+          tag: addr.tag || "Home",
+        },
+        subtotal: parseFloat(r.subtotal || 0),
+        shippingFee: parseFloat(r.shipping_fee || 0),
+        codFee: parseFloat(r.cod_fee || 0),
+        totalAmount: parseFloat(r.total_amount || 0),
+        paymentMethod: r.payment_method || "online",
+        paymentStatus: r.payment_status || "pending",
+        orderStatus: r.order_status || "confirmed",
+        items: Array.isArray(items) ? items : [],
+        createdAt: r.created_at || new Date().toISOString(),
+      };
+    });
 
     res.json({ success: true, count: formatted.length, orders: formatted });
   } catch (err) {

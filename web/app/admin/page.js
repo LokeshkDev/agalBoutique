@@ -1103,38 +1103,51 @@ export default function AdminPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                      <div>
-                        <div className="font-semibold text-gray-500 mb-1 uppercase tracking-wider text-[10px]">Customer Details</div>
-                        <div className="font-bold text-gray-900">{o.customerName}</div>
-                        <div className="text-gray-600">{o.customerPhone}</div>
-                        <div className="text-gray-500">{o.customerEmail}</div>
-                      </div>
+                    {(() => {
+                      const cName = o.customerName || o.customer_name || o.shippingAddress?.name || "Boutique Customer";
+                      const cPhone = o.customerPhone || o.customer_phone || o.shippingAddress?.phone || "";
+                      const cEmail = o.customerEmail || o.customer_email || o.shippingAddress?.email || "";
+                      const sLine1 = o.shippingAddress?.line1 || o.shipping_address?.line1 || o.shippingAddress?.address || "";
+                      const sCity = o.shippingAddress?.city || o.shipping_address?.city || "";
+                      const sState = o.shippingAddress?.state || o.shipping_address?.state || "";
+                      const sPin = o.shippingAddress?.pin || o.shipping_address?.pin || o.shippingAddress?.pincode || "";
+                      const sTag = o.shippingAddress?.tag || o.shipping_address?.tag || "Home";
 
-                      <div>
-                        <div className="font-semibold text-gray-500 mb-1 uppercase tracking-wider text-[10px]">Delivery Address</div>
-                        <div className="text-gray-700 font-medium">
-                          {o.shippingAddress?.line1}, {o.shippingAddress?.city}, {o.shippingAddress?.state} - {o.shippingAddress?.pin} ({o.shippingAddress?.tag || "Home"})
-                        </div>
-                      </div>
+                      return (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                          <div>
+                            <div className="font-semibold text-gray-500 mb-1 uppercase tracking-wider text-[10px]">Customer Details</div>
+                            <div className="font-bold text-gray-900">{cName}</div>
+                            <div className="text-gray-600">{cPhone ? `+91 ${cPhone}` : ""}</div>
+                            <div className="text-gray-500">{cEmail}</div>
+                          </div>
 
-                      <div>
-                        <div className="font-semibold text-gray-500 mb-1 uppercase tracking-wider text-[10px]">Items Summary ({o.items?.length || 0})</div>
-                        <div className="space-y-1">
-                          {o.items?.slice(0, 3).map((item, idx) => (
-                            <div key={idx} className="flex items-center justify-between text-gray-800">
-                              <span className="truncate max-w-[180px]">{item.name} ({item.size || "Free"}) × {item.qty}</span>
-                              <span className="font-bold">₹{item.price * item.qty}</span>
+                          <div>
+                            <div className="font-semibold text-gray-500 mb-1 uppercase tracking-wider text-[10px]">Delivery Address</div>
+                            <div className="text-gray-700 font-medium">
+                              {sLine1 ? `${sLine1}, ` : ""}{sCity ? `${sCity}, ` : ""}{sState ? `${sState} - ` : ""}<strong>{sPin}</strong> ({sTag})
                             </div>
-                          ))}
-                          {o.items?.length > 3 && (
-                            <div className="text-[11px] text-plum font-semibold cursor-pointer hover:underline" onClick={() => handleOpenOrderDetails(o)}>
-                              + {o.items.length - 3} more items...
+                          </div>
+
+                          <div>
+                            <div className="font-semibold text-gray-500 mb-1 uppercase tracking-wider text-[10px]">Items Summary ({o.items?.length || 0})</div>
+                            <div className="space-y-1">
+                              {o.items?.slice(0, 3).map((item, idx) => (
+                                <div key={idx} className="flex items-center justify-between text-gray-800">
+                                  <span className="truncate max-w-[180px]">{item.name} ({item.size || "Free"}) × {item.qty}</span>
+                                  <span className="font-bold">₹{item.price * item.qty}</span>
+                                </div>
+                              ))}
+                              {o.items?.length > 3 && (
+                                <div className="text-[11px] text-plum font-semibold cursor-pointer hover:underline" onClick={() => handleOpenOrderDetails(o)}>
+                                  + {o.items.length - 3} more items...
+                                </div>
+                              )}
                             </div>
-                          )}
+                          </div>
                         </div>
-                      </div>
-                    </div>
+                      );
+                    })()}
                   </div>
                 ))
               )}
@@ -1893,39 +1906,53 @@ export default function AdminPage() {
             </div>
 
             {/* Customer & Address Details Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs">
-              <div className="p-4 bg-white rounded-xl border border-gray-200 space-y-2">
-                <h4 className="font-bold text-gray-900 uppercase text-[11px] tracking-wider text-plum border-b border-gray-100 pb-1">
-                  Customer & Contact Info
-                </h4>
-                <div className="space-y-1">
-                  <p><strong className="text-gray-900">Name:</strong> {viewingOrder.customerName}</p>
-                  <p><strong className="text-gray-900">Phone:</strong> +91 {viewingOrder.customerPhone}</p>
-                  <p><strong className="text-gray-900">Email:</strong> {viewingOrder.customerEmail}</p>
-                </div>
-                <a
-                  href={`https://wa.me/91${viewingOrder.customerPhone}?text=Hello%20${encodeURIComponent(viewingOrder.customerName)},%20regarding%20your%20Agal%20Boutique%20order%20${viewingOrder.orderNumber}...`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition-colors mt-2 cursor-pointer shadow-xs"
-                >
-                  Chat on WhatsApp
-                </a>
-              </div>
+            {(() => {
+              const cName = viewingOrder.customerName || viewingOrder.customer_name || viewingOrder.shippingAddress?.name || "Boutique Customer";
+              const cPhone = viewingOrder.customerPhone || viewingOrder.customer_phone || viewingOrder.shippingAddress?.phone || "";
+              const cEmail = viewingOrder.customerEmail || viewingOrder.customer_email || viewingOrder.shippingAddress?.email || "";
+              const sLine1 = viewingOrder.shippingAddress?.line1 || viewingOrder.shipping_address?.line1 || viewingOrder.shippingAddress?.address || "";
+              const sCity = viewingOrder.shippingAddress?.city || viewingOrder.shipping_address?.city || "";
+              const sState = viewingOrder.shippingAddress?.state || viewingOrder.shipping_address?.state || "";
+              const sPin = viewingOrder.shippingAddress?.pin || viewingOrder.shipping_address?.pin || viewingOrder.shippingAddress?.pincode || "";
+              const sTag = viewingOrder.shippingAddress?.tag || viewingOrder.shipping_address?.tag || "Home";
 
-              <div className="p-4 bg-white rounded-xl border border-gray-200 space-y-2">
-                <h4 className="font-bold text-gray-900 uppercase text-[11px] tracking-wider text-plum border-b border-gray-100 pb-1">
-                  Shipping Delivery Address
-                </h4>
-                <p className="text-gray-700 font-medium leading-relaxed">
-                  {viewingOrder.shippingAddress?.line1}<br />
-                  {viewingOrder.shippingAddress?.city}, {viewingOrder.shippingAddress?.state} - <strong>{viewingOrder.shippingAddress?.pin}</strong><br />
-                  <span className="inline-block mt-1 bg-gray-100 text-gray-700 text-[10px] font-bold px-2 py-0.5 rounded border border-gray-200 uppercase">
-                    Address Tag: {viewingOrder.shippingAddress?.tag || "Home"}
-                  </span>
-                </p>
-              </div>
-            </div>
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs">
+                  <div className="p-4 bg-white rounded-xl border border-gray-200 space-y-2">
+                    <h4 className="font-bold text-gray-900 uppercase text-[11px] tracking-wider text-plum border-b border-gray-100 pb-1">
+                      Customer & Contact Info
+                    </h4>
+                    <div className="space-y-1">
+                      <p><strong className="text-gray-900">Name:</strong> {cName}</p>
+                      <p><strong className="text-gray-900">Phone:</strong> {cPhone ? `+91 ${cPhone}` : "N/A"}</p>
+                      <p><strong className="text-gray-900">Email:</strong> {cEmail || "N/A"}</p>
+                    </div>
+                    {cPhone && (
+                      <a
+                        href={`https://wa.me/91${cPhone}?text=Hello%20${encodeURIComponent(cName)},%20regarding%20your%20Agal%20Boutique%20order%20${viewingOrder.orderNumber}...`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition-colors mt-2 cursor-pointer shadow-xs"
+                      >
+                        Chat on WhatsApp
+                      </a>
+                    )}
+                  </div>
+
+                  <div className="p-4 bg-white rounded-xl border border-gray-200 space-y-2">
+                    <h4 className="font-bold text-gray-900 uppercase text-[11px] tracking-wider text-plum border-b border-gray-100 pb-1">
+                      Shipping Delivery Address
+                    </h4>
+                    <p className="text-gray-700 font-medium leading-relaxed">
+                      {sLine1 ? `${sLine1}, ` : ""}{sCity ? `${sCity}, ` : ""}{sState ? `${sState} - ` : ""}<strong>{sPin}</strong><br />
+                      <span className="inline-block mt-1 bg-gray-100 text-gray-700 text-[10px] font-bold px-2 py-0.5 rounded border border-gray-200 uppercase">
+                        Address Tag: {sTag}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Line Items Table with Custom Stitching Specs */}
             <div className="space-y-3 text-xs">
