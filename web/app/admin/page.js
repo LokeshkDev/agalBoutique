@@ -66,9 +66,21 @@ export default function AdminPage() {
     category: "Kurtis",
     price: "",
     mrp: "",
+    ratingAvg: "4.6",
+    ratingCount: "94",
     fabric: "",
+    care: "Dry clean recommended for first wash",
+    occasionStr: "Festive, Party Wear",
+    colorsStr: "Gold, Red, Green",
+    sizesList: [
+      { label: "34", stock: 10 },
+      { label: "36", stock: 5 },
+      { label: "38", stock: 8 },
+      { label: "40", stock: 2 },
+    ],
     description: "",
     imageUrl: "",
+    imagesList: ["", "", ""],
     isNew: false,
     isBestseller: false,
   });
@@ -146,9 +158,21 @@ export default function AdminPage() {
       category: categoriesList[0]?.name || "Kurtis",
       price: "",
       mrp: "",
-      fabric: "",
+      ratingAvg: "4.6",
+      ratingCount: "94",
+      fabric: "Brocade Silk & Cotton Lining",
+      care: "Dry clean recommended for first wash",
+      occasionStr: "Festive, Party Wear",
+      colorsStr: "Gold, Red, Green",
+      sizesList: [
+        { label: "34", stock: 10 },
+        { label: "36", stock: 5 },
+        { label: "38", stock: 8 },
+        { label: "40", stock: 2 },
+      ],
       description: "",
       imageUrl: "",
+      imagesList: ["", "", ""],
       isNew: false,
       isBestseller: false,
     });
@@ -157,15 +181,33 @@ export default function AdminPage() {
 
   const handleOpenEditProduct = (prod) => {
     setEditingProduct(prod);
+    const existingImages = (prod.images || []).map((img) => (typeof img === "string" ? img : img.url));
+    const mainImg = existingImages[0] || "";
+    const extraImgs = [existingImages[1] || "", existingImages[2] || "", existingImages[3] || ""];
+
     setProductForm({
       name: prod.name || "",
       slug: prod.slug || "",
       category: prod.category || "Kurtis",
       price: prod.price || "",
       mrp: prod.mrp || "",
+      ratingAvg: String(prod.rating?.avg || "4.6"),
+      ratingCount: String(prod.rating?.count || "94"),
       fabric: prod.fabric || "",
+      care: prod.care || "Dry clean recommended for first wash",
+      occasionStr: Array.isArray(prod.occasion) ? prod.occasion.join(", ") : prod.occasion || "Festive, Party Wear",
+      colorsStr: Array.isArray(prod.colors) ? prod.colors.join(", ") : prod.colors || "Gold, Red, Green",
+      sizesList: Array.isArray(prod.sizes) && prod.sizes.length > 0
+        ? prod.sizes.map((s) => (typeof s === "object" ? s : { label: String(s), stock: 10 }))
+        : [
+            { label: "34", stock: 10 },
+            { label: "36", stock: 5 },
+            { label: "38", stock: 8 },
+            { label: "40", stock: 2 },
+          ],
       description: prod.description || "",
-      imageUrl: prod.images?.[0]?.url || "",
+      imageUrl: mainImg,
+      imagesList: extraImgs,
       isNew: Boolean(prod.isNew),
       isBestseller: Boolean(prod.isBestseller),
     });
@@ -174,15 +216,42 @@ export default function AdminPage() {
 
   const handleSaveProduct = async (e) => {
     e.preventDefault();
+
+    // Prepare full image gallery array
+    const allImages = [];
+    if (productForm.imageUrl.trim()) {
+      allImages.push({ url: productForm.imageUrl.trim(), alt: productForm.name });
+    }
+    productForm.imagesList.forEach((url) => {
+      if (url && url.trim()) {
+        allImages.push({ url: url.trim(), alt: productForm.name });
+      }
+    });
+
+    // Parse occasions & colors arrays from comma-separated string
+    const parsedOccasions = productForm.occasionStr
+      ? productForm.occasionStr.split(",").map((s) => s.trim()).filter(Boolean)
+      : ["Festive"];
+
+    const parsedColors = productForm.colorsStr
+      ? productForm.colorsStr.split(",").map((s) => s.trim()).filter(Boolean)
+      : ["Gold", "Red", "Green"];
+
     const payload = {
       name: productForm.name,
       slug: productForm.slug || productForm.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
       category: productForm.category,
       price: parseFloat(productForm.price),
       mrp: productForm.mrp ? parseFloat(productForm.mrp) : null,
+      ratingAvg: parseFloat(productForm.ratingAvg || "4.6"),
+      ratingCount: parseInt(productForm.ratingCount || "94", 10),
       fabric: productForm.fabric,
+      care: productForm.care,
+      occasion: parsedOccasions,
+      colors: parsedColors,
+      sizes: productForm.sizesList,
       description: productForm.description,
-      images: productForm.imageUrl ? [{ url: productForm.imageUrl, alt: productForm.name }] : [],
+      images: allImages,
       isNew: productForm.isNew,
       isBestseller: productForm.isBestseller,
     };
@@ -971,7 +1040,7 @@ export default function AdminPage() {
               {editingProduct ? "Edit Product" : "Add Product to DB"}
             </h3>
 
-            <form onSubmit={handleSaveProduct} className="space-y-3">
+            <form onSubmit={handleSaveProduct} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Product Title</label>
                 <input
@@ -1001,13 +1070,13 @@ export default function AdminPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Fabric</label>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Fabric Details</label>
                   <input
                     type="text"
                     value={productForm.fabric}
                     onChange={(e) => setProductForm({ ...productForm, fabric: e.target.value })}
                     className="w-full h-10 px-3 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-plum"
-                    placeholder="e.g. 100% Kanchipuram Silk"
+                    placeholder="e.g. Brocade Silk & Cotton Lining"
                   />
                 </div>
               </div>
@@ -1037,14 +1106,151 @@ export default function AdminPage() {
                 </div>
               </div>
 
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Rating Average (1-5)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="1"
+                    max="5"
+                    value={productForm.ratingAvg}
+                    onChange={(e) => setProductForm({ ...productForm, ratingAvg: e.target.value })}
+                    className="w-full h-10 px-3 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-plum"
+                    placeholder="4.6"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Verified Review Count</label>
+                  <input
+                    type="number"
+                    value={productForm.ratingCount}
+                    onChange={(e) => setProductForm({ ...productForm, ratingCount: e.target.value })}
+                    className="w-full h-10 px-3 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-plum"
+                    placeholder="94"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Color Swatches (comma separated)</label>
+                  <input
+                    type="text"
+                    value={productForm.colorsStr}
+                    onChange={(e) => setProductForm({ ...productForm, colorsStr: e.target.value })}
+                    className="w-full h-10 px-3 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-plum"
+                    placeholder="Gold, Red, Green"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Occasions (comma separated)</label>
+                  <input
+                    type="text"
+                    value={productForm.occasionStr}
+                    onChange={(e) => setProductForm({ ...productForm, occasionStr: e.target.value })}
+                    className="w-full h-10 px-3 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-plum"
+                    placeholder="Festive, Party Wear"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Care & Wash Instructions</label>
+                <input
+                  type="text"
+                  value={productForm.care}
+                  onChange={(e) => setProductForm({ ...productForm, care: e.target.value })}
+                  className="w-full h-10 px-3 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-plum"
+                  placeholder="Dry clean recommended for first wash"
+                />
+              </div>
+
+              {/* Sizes and Stock Management */}
+              <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-gray-800">Sizes & Inventory Stock</label>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setProductForm({
+                        ...productForm,
+                        sizesList: [...productForm.sizesList, { label: "42", stock: 5 }],
+                      })
+                    }
+                    className="text-[11px] font-bold text-plum hover:underline"
+                  >
+                    + Add Size Variant
+                  </button>
+                </div>
+                <div className="space-y-2 max-h-36 overflow-y-auto pr-1">
+                  {productForm.sizesList.map((sz, sIdx) => (
+                    <div key={sIdx} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        placeholder="Size (e.g. 34)"
+                        value={sz.label}
+                        onChange={(e) => {
+                          const updated = [...productForm.sizesList];
+                          updated[sIdx].label = e.target.value;
+                          setProductForm({ ...productForm, sizesList: updated });
+                        }}
+                        className="w-1/2 h-8 px-2 text-xs border border-gray-300 rounded bg-white"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Stock Qty"
+                        value={sz.stock}
+                        onChange={(e) => {
+                          const updated = [...productForm.sizesList];
+                          updated[sIdx].stock = parseInt(e.target.value || "0", 10);
+                          setProductForm({ ...productForm, sizesList: updated });
+                        }}
+                        className="w-1/2 h-8 px-2 text-xs border border-gray-300 rounded bg-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = productForm.sizesList.filter((_, i) => i !== sIdx);
+                          setProductForm({ ...productForm, sizesList: updated });
+                        }}
+                        className="text-red-500 hover:bg-red-50 p-1 rounded font-bold text-xs"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Main Image Upload */}
               <ImageUploadInput
-                label="Product Main Image (Cloudflare R2 + WebP Optimized)"
+                label="Product Main Cover Image (Cloudflare R2 + WebP)"
                 value={productForm.imageUrl}
                 onChange={(url) => setProductForm({ ...productForm, imageUrl: url })}
               />
 
+              {/* Gallery Images Upload */}
+              <div className="space-y-2 pt-2 border-t border-gray-200">
+                <label className="block text-xs font-bold text-gray-800">Additional Gallery Images (R2 WebP)</label>
+                {productForm.imagesList.map((imgUrl, gIdx) => (
+                  <ImageUploadInput
+                    key={gIdx}
+                    label={`Gallery Image #${gIdx + 2}`}
+                    value={imgUrl}
+                    onChange={(url) => {
+                      const updated = [...productForm.imagesList];
+                      updated[gIdx] = url;
+                      setProductForm({ ...productForm, imagesList: updated });
+                    }}
+                  />
+                ))}
+              </div>
+
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Description</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Product Description</label>
                 <textarea
                   rows={3}
                   value={productForm.description}

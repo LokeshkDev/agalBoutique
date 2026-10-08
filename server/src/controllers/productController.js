@@ -184,6 +184,8 @@ export async function createProduct(req, res) {
       sizes,
       colors,
       images,
+      ratingAvg = 4.6,
+      ratingCount = 94,
       isNew = false,
       isBestseller = false,
     } = req.body;
@@ -206,7 +208,7 @@ export async function createProduct(req, res) {
         sizes: sizes || [],
         colors: colors || [],
         images: images || [],
-        rating: { avg: 4.5, count: 1 },
+        rating: { avg: parseFloat(ratingAvg), count: parseInt(ratingCount) },
         isNew: Boolean(isNew),
         isBestseller: Boolean(isBestseller),
       };
@@ -215,8 +217,8 @@ export async function createProduct(req, res) {
     }
 
     await pool.query(
-      `INSERT INTO products (id, slug, name, category_name, description, fabric, care, occasion, price, mrp, sizes, colors, images, is_new, is_bestseller)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO products (id, slug, name, category_name, description, fabric, care, occasion, price, mrp, sizes, colors, images, rating_avg, rating_count, is_new, is_bestseller)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         generatedSlug,
@@ -231,6 +233,8 @@ export async function createProduct(req, res) {
         JSON.stringify(sizes || []),
         JSON.stringify(colors || []),
         JSON.stringify(images || []),
+        parseFloat(ratingAvg),
+        parseInt(ratingCount),
         isNew ? 1 : 0,
         isBestseller ? 1 : 0,
       ]
@@ -264,6 +268,8 @@ export async function updateProduct(req, res) {
       sizes,
       colors,
       images,
+      ratingAvg,
+      ratingCount,
       isNew,
       isBestseller,
       isActive = true,
@@ -285,6 +291,10 @@ export async function updateProduct(req, res) {
           sizes: sizes || seedProducts[idx].sizes,
           colors: colors || seedProducts[idx].colors,
           images: images || seedProducts[idx].images,
+          rating: {
+            avg: ratingAvg !== undefined ? parseFloat(ratingAvg) : seedProducts[idx].rating?.avg || 4.5,
+            count: ratingCount !== undefined ? parseInt(ratingCount) : seedProducts[idx].rating?.count || 10,
+          },
           isNew: isNew !== undefined ? Boolean(isNew) : seedProducts[idx].isNew,
           isBestseller: isBestseller !== undefined ? Boolean(isBestseller) : seedProducts[idx].isBestseller,
         };
@@ -306,6 +316,8 @@ export async function updateProduct(req, res) {
         sizes = ?,
         colors = ?,
         images = ?,
+        rating_avg = COALESCE(?, rating_avg),
+        rating_count = COALESCE(?, rating_count),
         is_new = ?,
         is_bestseller = ?,
         is_active = ?
@@ -323,6 +335,8 @@ export async function updateProduct(req, res) {
         JSON.stringify(sizes || []),
         JSON.stringify(colors || []),
         JSON.stringify(images || []),
+        ratingAvg !== undefined ? parseFloat(ratingAvg) : null,
+        ratingCount !== undefined ? parseInt(ratingCount) : null,
         isNew ? 1 : 0,
         isBestseller ? 1 : 0,
         isActive ? 1 : 0,
