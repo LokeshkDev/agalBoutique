@@ -194,14 +194,100 @@ export async function getOrder(req, res) {
 export async function getAllOrders(req, res) {
   try {
     if (!pool || !isConnected) {
-      return res.json({ success: true, orders: inMemoryOrders });
+      return res.json({ success: true, count: inMemoryOrders.length, orders: inMemoryOrders });
     }
 
     const [rows] = await pool.query("SELECT * FROM orders ORDER BY created_at DESC LIMIT 100");
-    res.json({ success: true, count: rows.length, orders: rows });
+    const formatted = rows.map((r) => ({
+      id: r.id,
+      orderNumber: r.order_number,
+      customerName: r.customer_name,
+      customerPhone: r.customer_phone,
+      customerEmail: r.customer_email,
+      shippingAddress: typeof r.shipping_address === "string" ? JSON.parse(r.shipping_address) : r.shipping_address,
+      subtotal: parseFloat(r.subtotal),
+      shippingFee: parseFloat(r.shipping_fee),
+      codFee: parseFloat(r.cod_fee),
+      totalAmount: parseFloat(r.total_amount),
+      paymentMethod: r.payment_method,
+      paymentStatus: r.payment_status,
+      orderStatus: r.order_status,
+      items: typeof r.items === "string" ? JSON.parse(r.items) : r.items,
+      createdAt: r.created_at,
+    }));
+
+    res.json({ success: true, count: formatted.length, orders: formatted });
   } catch (err) {
     console.error("Error in getAllOrders:", err);
     res.status(500).json({ success: false, message: "Failed to fetch orders" });
   }
 }
+
+// PUT /api/orders/:id/status (Admin Only)
+export async function updateOrderStatus(req, res) {
+  try {
+    const { id } = req.params;
+    const { orderStatus, paymentStatus } = req.body;
+
+    if (!pool || !isConnected) {
+      const order = inMemoryOrders.find((o) => o.orderNumber === id || String(o.id) === String(id));
+      if (order) {
+        if (orderStatus) order.orderStatus = orderStatus;
+        if (paymentStatus) order.paymentStatus = paymentStatus;
+      }
+      return res.json({ success: true, message: "Order status updated (in-memory)" });
+    }
+
+    await pool.query(
+      `UPDATE orders SET
+        order_status = COALESCE(?, order_status),
+        payment_status = COALESCE(?, payment_status)
+       WHERE id = ? OR order_number = ?`,
+      [orderStatus || null, paymentStatus || null, id, id]
+    );
+
+    res.json({ success: true, message: "Order status updated successfully" });
+  } catch (err) {
+    console.error("Error in updateOrderStatus:", err);
+    res.status(500).json({ success: false, message: "Failed to update order status" });
+  }
+}
+
+// GET /api/admin/stats (Admin Only)
+export async function getAdminStats(req, res) {
+  try {
+    if (!pool || !isConnected) {
+      const totalOrders = inMemoryOrders.length;
+      const totalRevenue = inMemoryOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+      const pendingOrders = inMemoryOrders.filter((o) => o.orderStatus === "pending" || o.orderStatus === "confirmed").length;
+      return res.json({
+        success: true,
+        stats: {
+          totalOrders,
+          totalRevenue,
+          pendingOrders,
+          totalProducts: seedProducts.length,
+        },
+      });
+    }
+
+    const [ordersCount] = await pool.query("SELECT COUNT(*) as cnt, COALESCE(SUM(total_amount), 0) as rev FROM orders");
+    const [pendingCount] = await pool.query("SELECT COUNT(*) as cnt FROM orders WHERE order_status IN ('pending', 'confirmed')");
+    const [prodCount] = await pool.query("SELECT COUNT(*) as cnt FROM products WHERE is_active = 1");
+
+    res.json({
+      success: true,
+      stats: {
+        totalOrders: ordersCount[0]?.cnt || 0,
+        totalRevenue: parseFloat(ordersCount[0]?.rev || 0),
+        pendingOrders: pendingCount[0]?.cnt || 0,
+        totalProducts: prodCount[0]?.cnt || 0,
+      },
+    });
+  } catch (err) {
+    console.error("Error in getAdminStats:", err);
+    res.status(500).json({ success: false, message: "Failed to fetch admin stats" });
+  }
+}
+
 

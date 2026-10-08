@@ -4,6 +4,8 @@ import ShopFilters from "@/components/ShopFilters";
 import JsonLd from "@/components/JsonLd";
 import Footer from "@/components/Footer";
 import { getProducts, getCategories } from "@/lib/api";
+import { products as fallbackProducts } from "@/lib/data/products";
+import { categories as fallbackCategories } from "@/lib/data/categories";
 import { Tote } from "@phosphor-icons/react/dist/ssr";
 
 export async function generateMetadata({ searchParams }) {
@@ -32,25 +34,53 @@ export async function generateMetadata({ searchParams }) {
 export default async function ShopPage({ searchParams }) {
   const params = await searchParams;
   const category = params?.category || "";
+  const search = params?.search || "";
   const sort = params?.sort || "newest";
-  const size = params?.size ? [params.size] : [];
-  const fabric = params?.fabric ? [params.fabric] : [];
-  const occasion = params?.occasion ? [params.occasion] : [];
   const page = parseInt(params?.page || "1", 10);
+  const limit = 16;
 
-  const categories = getCategories();
-  const { products, total, totalPages } = getProducts({
+  // Fetch categories from API with static fallback
+  const catRes = await getCategories();
+  const categoriesList = catRes?.categories && catRes.categories.length > 0 ? catRes.categories : fallbackCategories;
+
+  // Fetch products from API with static fallback
+  const prodRes = await getProducts({
     category,
+    search,
     sort,
-    sizes: size,
-    fabrics: fabric,
-    occasions: occasion,
     page,
-    limit: 16,
+    limit,
   });
 
+  let productsList = [];
+  let total = 0;
+
+  if (prodRes?.success && Array.isArray(prodRes.products) && prodRes.products.length > 0) {
+    productsList = prodRes.products;
+    total = prodRes.total || productsList.length;
+  } else {
+    // Local fallback filtering
+    let filtered = [...fallbackProducts];
+    if (category) {
+      filtered = filtered.filter((p) => p.category.toLowerCase() === category.toLowerCase());
+    }
+    if (search) {
+      const q = search.toLowerCase();
+      filtered = filtered.filter(
+        (p) => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q)
+      );
+    }
+    if (sort === "price_asc") filtered.sort((a, b) => a.price - b.price);
+    if (sort === "price_desc") filtered.sort((a, b) => b.price - a.price);
+
+    total = filtered.length;
+    productsList = filtered.slice((page - 1) * limit, page * limit);
+  }
+
+  const totalPages = Math.ceil(total / limit) || 1;
+
   const categoryName = category
-    ? categories.find((c) => c.slug === category)?.name || category
+    ? categoriesList.find((c) => c.slug === category)?.name || category
     : "All Collections";
 
   const itemListSchema = {
@@ -58,13 +88,13 @@ export default async function ShopPage({ searchParams }) {
     "@type": "ItemList",
     name: `${categoryName} - Agal Boutique`,
     numberOfItems: total,
-    itemListElement: products.map((p, index) => ({
+    itemListElement: productsList.map((p, index) => ({
       "@type": "ListItem",
       position: index + 1,
       item: {
         "@type": "Product",
         name: p.name,
-        image: p.images[0]?.url,
+        image: p.images?.[0]?.url || "/logo.png",
         offers: {
           "@type": "Offer",
           price: p.price,
@@ -74,29 +104,9 @@ export default async function ShopPage({ searchParams }) {
     })),
   };
 
-  const breadcrumbSchema = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      {
-        "@type": "ListItem",
-        position: 1,
-        name: "Home",
-        item: "https://www.agalboutique.com",
-      },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: "Shop",
-        item: "https://www.agalboutique.com/shop",
-      },
-    ],
-  };
-
   return (
     <>
       <JsonLd data={itemListSchema} />
-      <JsonLd data={breadcrumbSchema} />
 
       <div className="max-w-[var(--container)] mx-auto px-4 lg:px-8 py-6 lg:py-8">
         {/* Header with Title & Item Count */}
@@ -115,10 +125,10 @@ export default async function ShopPage({ searchParams }) {
         </div>
 
         {/* Filter Controls Component */}
-        <ShopFilters totalCount={total} categories={categories} />
+        <ShopFilters totalCount={total} categories={categoriesList} />
 
         {/* Product Grid or Empty State */}
-        {products.length === 0 ? (
+        {productsList.length === 0 ? (
           <div className="py-16 text-center flex flex-col items-center justify-center">
             <div className="w-16 h-16 rounded-full bg-gray-100 grid place-items-center mb-4 text-plum">
               <Tote size={36} weight="light" />
@@ -138,7 +148,7 @@ export default async function ShopPage({ searchParams }) {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5 sm:gap-4 lg:gap-5 mt-4">
-            {products.map((product, idx) => (
+            {productsList.map((product, idx) => (
               <ProductCard
                 key={product.id}
                 product={product}

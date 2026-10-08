@@ -12,6 +12,7 @@ import categoryRoutes from "./routes/categories.js";
 import orderRoutes from "./routes/orders.js";
 import paymentRoutes from "./routes/payments.js";
 import adminRoutes from "./routes/admin.js";
+import cmsRoutes from "./routes/cms.js";
 
 dotenv.config();
 
@@ -65,6 +66,7 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/cms", cmsRoutes);
 
 // 404 Handler
 app.use((req, res) => {

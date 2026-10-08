@@ -1,202 +1,138 @@
-/**
- * Agal Boutique API abstraction layer — synchronized with Node/Express/MySQL backend (server/).
- * Uses NEXT_PUBLIC_API_URL with automatic fallback to local data.
- */
+// Frontend API Client to communicate with Express/MySQL Backend
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
-import { products as localProducts } from "@/lib/data/products";
-import { categories as localCategories } from "@/lib/data/categories";
+// Helper for standard JSON fetch with error handling & credentials
+async function apiFetch(endpoint, options = {}) {
+  const url = `${API_BASE}${endpoint}`;
+  const defaultHeaders = {
+    "Content-Type": "application/json",
+  };
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
-
-/**
- * Get products with optional filtering, sorting, and pagination
- */
-export function getProducts(options = {}) {
-  let filtered = [...localProducts];
-
-  // Category filter
-  if (options.category) {
-    filtered = filtered.filter(
-      (p) =>
-        p.category.toLowerCase().replace(/\s+/g, "-") ===
-        options.category.toLowerCase()
-    );
+  // Attach stored admin token if available
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("agal_admin_token");
+    if (token) {
+      defaultHeaders["Authorization"] = `Bearer ${token}`;
+    }
   }
 
-  // Search
-  if (options.search) {
-    const q = options.search.toLowerCase();
-    filtered = filtered.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.description.toLowerCase().includes(q) ||
-        p.fabric.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q)
-    );
-  }
-
-  // Size filter
-  if (options.sizes?.length) {
-    filtered = filtered.filter((p) =>
-      p.sizes.some((s) => options.sizes.includes(s.label) && s.stock > 0)
-    );
-  }
-
-  // Fabric filter
-  if (options.fabrics?.length) {
-    filtered = filtered.filter((p) =>
-      options.fabrics.some((f) =>
-        p.fabric.toLowerCase().includes(f.toLowerCase())
-      )
-    );
-  }
-
-  // Occasion filter
-  if (options.occasions?.length) {
-    filtered = filtered.filter((p) =>
-      p.occasion.some((o) => options.occasions.includes(o))
-    );
-  }
-
-  // Price range
-  if (options.minPrice != null) {
-    filtered = filtered.filter((p) => p.price >= options.minPrice);
-  }
-  if (options.maxPrice != null) {
-    filtered = filtered.filter((p) => p.price <= options.maxPrice);
-  }
-
-  // Sort
-  const sort = options.sort || "newest";
-  switch (sort) {
-    case "price-asc":
-      filtered.sort((a, b) => a.price - b.price);
-      break;
-    case "price-desc":
-      filtered.sort((a, b) => b.price - a.price);
-      break;
-    case "rating":
-      filtered.sort((a, b) => (b.rating?.avg || 0) - (a.rating?.avg || 0));
-      break;
-    case "discount":
-      filtered.sort((a, b) => {
-        const dA = a.mrp ? (a.mrp - a.price) / a.mrp : 0;
-        const dB = b.mrp ? (b.mrp - b.price) / b.mrp : 0;
-        return dB - dA;
-      });
-      break;
-    case "newest":
-    default:
-      filtered.sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0));
-      break;
-  }
-
-  // Pagination
-  const page = Math.max(1, options.page || 1);
-  const limit = options.limit || 12;
-  const total = filtered.length;
-  const totalPages = Math.ceil(total / limit);
-  const start = (page - 1) * limit;
-  const paged = filtered.slice(start, start + limit);
-
-  return { products: paged, total, page, totalPages };
-}
-
-/**
- * Fetch live products from Express/MySQL backend with fallback
- */
-export async function fetchLiveProducts(queryStr = "") {
   try {
-    const res = await fetch(`${API_URL}/products?${queryStr}`, {
-      next: { revalidate: 60 },
+    const res = await fetch(url, {
+      ...options,
+      headers: {
+        ...defaultHeaders,
+        ...options.headers,
+      },
+      credentials: options.credentials || "include",
     });
-    if (!res.ok) throw new Error("Failed to fetch products from backend");
+
     const data = await res.json();
     return data;
   } catch (err) {
-    return null;
+    console.warn(`[API Fetch Warning] ${endpoint}:`, err.message);
+    return { success: false, error: err.message };
   }
 }
 
-/**
- * Get a single product by slug
- */
-export function getProduct(slug) {
-  return localProducts.find((p) => p.slug === slug) || null;
+// 1. Products APIs
+export async function getProducts(params = {}) {
+  const query = new URLSearchParams();
+  if (params.category) query.append("category", params.category);
+  if (params.search) query.append("search", params.search);
+  if (params.sort) query.append("sort", params.sort);
+  if (params.minPrice) query.append("minPrice", params.minPrice);
+  if (params.maxPrice) query.append("maxPrice", params.maxPrice);
+  if (params.page) query.append("page", params.page);
+  if (params.limit) query.append("limit", params.limit);
+
+  const queryString = query.toString();
+  return await apiFetch(`/products${queryString ? `?${queryString}` : ""}`);
 }
 
-/**
- * Fetch a single product from backend by slug
- */
-export async function fetchLiveProduct(slug) {
-  try {
-    const res = await fetch(`${API_URL}/products/${slug}`, {
-      next: { revalidate: 60 },
-    });
-    if (!res.ok) throw new Error("Product not found");
-    const data = await res.json();
-    return data.product;
-  } catch (err) {
-    return getProduct(slug);
-  }
+export async function getProductBySlug(slug) {
+  return await apiFetch(`/products/${slug}`);
 }
+export const getProduct = getProductBySlug;
 
-/**
- * Submit order to backend server API
- */
-export async function submitOrderToBackend(orderPayload) {
-  try {
-    const res = await fetch(`${API_URL}/orders`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(orderPayload),
-    });
-    const data = await res.json();
-    return data;
-  } catch (err) {
-    console.warn("Backend order submission error:", err.message);
-    return null;
-  }
-}
-
-/**
- * Get all product slugs (for sitemap/static generation)
- */
 export function getAllSlugs() {
-  return localProducts.map((p) => ({ slug: p.slug }));
+  const { products } = require("@/lib/data/products");
+  return products.map((p) => ({ slug: p.slug }));
 }
 
-/**
- * Get all categories
- */
-export function getCategories() {
-  return localCategories;
+export function getSimilarProducts(id, limit = 4) {
+  const { products } = require("@/lib/data/products");
+  return products.filter((p) => p.id !== id).slice(0, limit);
 }
 
-/**
- * Get products similar to a given product
- */
-export function getSimilarProducts(productId, limit = 4) {
-  const product = localProducts.find((p) => p.id === productId);
-  if (!product) return [];
-  return localProducts
-    .filter((p) => p.category === product.category && p.id !== productId)
-    .slice(0, limit);
+// 2. Categories APIs
+export async function getCategories() {
+  return await apiFetch("/categories");
 }
 
-/**
- * Get unique fabrics across all products
- */
-export function getAllFabrics() {
-  const fabrics = new Set(localProducts.map((p) => p.fabric));
-  return [...fabrics].sort();
+// 3. CMS Settings APIs
+export async function getCmsSettings() {
+  return await apiFetch("/cms");
 }
 
-/**
- * Get unique occasions across all products
- */
-export function getAllOccasions() {
-  const occasions = new Set(localProducts.flatMap((p) => p.occasion));
-  return [...occasions].sort();
+// 4. Orders API
+export async function postOrder(orderPayload) {
+  return await apiFetch("/orders", {
+    method: "POST",
+    body: JSON.stringify(orderPayload),
+  });
+}
+export const submitOrderToBackend = postOrder;
+
+// 5. Admin Auth & Management APIs
+export async function adminLogin(username, password) {
+  return await apiFetch("/admin/login", {
+    method: "POST",
+    body: JSON.stringify({ username, password }),
+  });
+}
+
+export async function adminGetMe() {
+  return await apiFetch("/admin/me");
+}
+
+export async function adminGetStats() {
+  return await apiFetch("/admin/stats");
+}
+
+export async function adminGetOrders() {
+  return await apiFetch("/orders/all");
+}
+
+export async function adminUpdateOrderStatus(orderId, orderStatus, paymentStatus) {
+  return await apiFetch(`/orders/${orderId}/status`, {
+    method: "PUT",
+    body: JSON.stringify({ orderStatus, paymentStatus }),
+  });
+}
+
+export async function adminCreateProduct(productData) {
+  return await apiFetch("/products", {
+    method: "POST",
+    body: JSON.stringify(productData),
+  });
+}
+
+export async function adminUpdateProduct(id, productData) {
+  return await apiFetch(`/products/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(productData),
+  });
+}
+
+export async function adminDeleteProduct(id) {
+  return await apiFetch(`/products/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export async function adminUpdateCmsSetting(key, value) {
+  return await apiFetch("/cms/admin", {
+    method: "PUT",
+    body: JSON.stringify({ key, value }),
+  });
 }

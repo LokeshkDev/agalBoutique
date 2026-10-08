@@ -1,5 +1,11 @@
 import { Router } from "express";
-import { getProducts, getProductBySlug, createProduct } from "../controllers/productController.js";
+import {
+  getProducts,
+  getProductBySlug,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+} from "../controllers/productController.js";
 import { adminAuthMiddleware } from "../middleware/adminAuth.js";
 
 const router = Router();
@@ -7,6 +13,7 @@ const router = Router();
 router.get("/", getProducts);
 router.get("/:slug", getProductBySlug);
 router.post("/", adminAuthMiddleware, createProduct);
+router.put("/:id", adminAuthMiddleware, updateProduct);
+router.delete("/:id", adminAuthMiddleware, deleteProduct);
 
 export default router;
-

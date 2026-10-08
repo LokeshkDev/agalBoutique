@@ -1,9 +1,23 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { getCategories } from "@/lib/api";
+import { categories as fallbackCategories } from "@/lib/data/categories";
 
 export default function CategoryRow() {
-  const categories = getCategories();
+  const [categories, setCategories] = useState(fallbackCategories);
+
+  useEffect(() => {
+    async function loadData() {
+      const res = await getCategories();
+      if (res?.success && Array.isArray(res.categories) && res.categories.length > 0) {
+        setCategories(res.categories);
+      }
+    }
+    loadData();
+  }, []);
 
   return (
     <section aria-labelledby="categories-heading" className="py-6 lg:py-10 bg-white">
@@ -30,7 +44,7 @@ export default function CategoryRow() {
           </Link>
         </div>
 
-        {/* Categories Row: Replicating the Arched Pastel Dome Design from the Reference */}
+        {/* Categories Row */}
         <div className="flex gap-4 sm:gap-6 lg:gap-8 overflow-x-auto no-scrollbar snap-x snap-mandatory py-2 justify-start lg:justify-between items-start">
           {categories.map((cat) => (
             <Link

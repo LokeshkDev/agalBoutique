@@ -1,9 +1,23 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import ProductCard from "@/components/ProductCard";
-import { getNewArrivals } from "@/lib/data/products";
+import { getProducts } from "@/lib/api";
+import { getNewArrivals as getFallbackNewArrivals } from "@/lib/data/products";
 
 export default function NewArrivals() {
-  const products = getNewArrivals();
+  const [products, setProducts] = useState(getFallbackNewArrivals());
+
+  useEffect(() => {
+    async function loadData() {
+      const res = await getProducts({ sort: "newest", limit: 8 });
+      if (res?.success && res.products && res.products.length > 0) {
+        setProducts(res.products);
+      }
+    }
+    loadData();
+  }, []);
 
   return (
     <section aria-labelledby="new-arrivals-heading" className="py-8 lg:py-14 bg-[#fbf5f7]">
@@ -28,7 +42,7 @@ export default function NewArrivals() {
           </Link>
         </div>
 
-        {/* Product Grid: 2 cols on mobile, 3 on tablet, 4 on desktop */}
+        {/* Product Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-5">
           {products.slice(0, 8).map((product, idx) => (
             <ProductCard

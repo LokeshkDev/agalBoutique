@@ -8,13 +8,22 @@ import ProductCard from "@/components/ProductCard";
 import JsonLd from "@/components/JsonLd";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
-import { getProduct, getSimilarProducts } from "@/lib/api";
+import { getProductBySlug, getProducts } from "@/lib/api";
+import { products as fallbackProducts } from "@/lib/data/products";
 import { formatPrice, discountPercent } from "@/lib/format";
-import { Star, Tag, ShieldCheck, Truck, ArrowCounterClockwise } from "@phosphor-icons/react/dist/ssr";
+import { Star, Tag } from "@phosphor-icons/react/dist/ssr";
+
+async function fetchProduct(slug) {
+  const res = await getProductBySlug(slug);
+  if (res?.success && res.product) {
+    return res.product;
+  }
+  return fallbackProducts.find((p) => p.slug === slug) || null;
+}
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
-  const product = getProduct(slug);
+  const product = await fetchProduct(slug);
 
   if (!product) {
     return {
@@ -23,7 +32,7 @@ export async function generateMetadata({ params }) {
   }
 
   const title = `${product.name} | Agal Boutique`;
-  const description = `${product.description.slice(0, 145)} ₹${product.price}. Free delivery above ₹999.`;
+  const description = `${product.description?.slice(0, 145) || ""} ₹${product.price}. Free delivery above ₹999.`;
   const imageUrl = product.images?.[0]?.url || "/logo.png";
 
   return {
@@ -42,28 +51,26 @@ export async function generateMetadata({ params }) {
           url: imageUrl,
           width: 1200,
           height: 1600,
-          alt: product.images?.[0]?.alt || product.name,
+          alt: product.name,
         },
       ],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: [imageUrl],
     },
   };
 }
 
 export default async function ProductPage({ params }) {
   const { slug } = await params;
-  const product = getProduct(slug);
+  const product = await fetchProduct(slug);
 
   if (!product) {
     notFound();
   }
 
-  const similarProducts = getSimilarProducts(product.id, 4);
+  const allProdsRes = await getProducts({ category: product.category, limit: 5 });
+  const similarProducts = (allProdsRes?.products || fallbackProducts)
+    .filter((p) => p.id !== product.id && p.slug !== product.slug)
+    .slice(0, 4);
+
   const discount = discountPercent(product.price, product.mrp);
 
   const productLd = {
@@ -102,7 +109,7 @@ export default async function ProductPage({ params }) {
             <li>/</li>
             <li>
               <Link
-                href={`/shop?category=${product.category.toLowerCase().replace(/\s+/g, "-")}`}
+                href={`/shop?category=${product.category?.toLowerCase().replace(/\s+/g, "-")}`}
                 className="hover:text-plum transition-colors"
               >
                 {product.category}
@@ -115,26 +122,26 @@ export default async function ProductPage({ params }) {
           </ol>
         </nav>
 
-        {/* PDP Layout: Gallery Left, Sticky Details Right on Desktop */}
+        {/* PDP Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-start">
           {/* Gallery Column */}
           <div className="lg:col-span-7">
             <ProductGallery images={product.images} name={product.name} />
           </div>
 
-          {/* Details Column (Meesho / Myntra Style) */}
+          {/* Details Column */}
           <div className="lg:col-span-5 lg:sticky lg:top-20 space-y-4">
             {/* Title & Category */}
             <div>
               <span className="text-[11px] uppercase tracking-wider font-extrabold text-plum">
-                {product.category} · {product.fabric}
+                {product.category} {product.fabric ? `· ${product.fabric}` : ""}
               </span>
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 leading-snug mt-0.5">
                 {product.name}
               </h1>
             </div>
 
-            {/* Price Box - Meesho / Myntra Large Format */}
+            {/* Price Box */}
             <div className="p-3.5 rounded-[5px] bg-[#fcfafc] border border-[#f3e3ee] space-y-2">
               <div className="flex items-baseline gap-2.5 flex-wrap">
                 <span className="text-2xl sm:text-3xl font-extrabold text-gray-900 font-sans">
@@ -185,16 +192,16 @@ export default async function ProductPage({ params }) {
             {/* Size Selector & Action Buttons */}
             <ProductActions product={product} />
 
-            {/* PIN Code Delivery Checker with 5px radius */}
+            {/* PIN Code Delivery Checker */}
             <PinCodeCheck />
 
-            {/* Accordion Tabs with 5px radius */}
+            {/* Accordion Tabs */}
             <div className="pt-2 border-t border-gray-200 space-y-1">
               <Accordion title="Product Specifications & Fabric Details" defaultOpen={true}>
                 <ul className="list-disc list-inside space-y-1.5 text-xs text-gray-700">
-                  <li><strong>Fabric:</strong> {product.fabric}</li>
-                  <li><strong>Care Instructions:</strong> {product.care}</li>
-                  <li><strong>Occasion:</strong> {product.occasion?.join(", ")}</li>
+                  {product.fabric && <li><strong>Fabric:</strong> {product.fabric}</li>}
+                  {product.care && <li><strong>Care Instructions:</strong> {product.care}</li>}
+                  {product.occasion && <li><strong>Occasion:</strong> {Array.isArray(product.occasion) ? product.occasion.join(", ") : product.occasion}</li>}
                   <li><strong>Stitching:</strong> Handcrafted boutique quality from Tamil Nadu</li>
                 </ul>
               </Accordion>

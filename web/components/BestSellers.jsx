@@ -1,15 +1,29 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import ProductCard from "@/components/ProductCard";
-import { getFeaturedProducts } from "@/lib/data/products";
-import { Tag } from "@phosphor-icons/react/dist/ssr";
+import { getProducts } from "@/lib/api";
+import { getFeaturedProducts as getFallbackFeatured } from "@/lib/data/products";
+import { Tag } from "@phosphor-icons/react";
 
 export default function BestSellers() {
-  const bestSellers = getFeaturedProducts();
+  const [bestSellers, setBestSellers] = useState(getFallbackFeatured());
+
+  useEffect(() => {
+    async function loadData() {
+      const res = await getProducts({ sort: "rating", limit: 8 });
+      if (res?.success && res.products && res.products.length > 0) {
+        setBestSellers(res.products);
+      }
+    }
+    loadData();
+  }, []);
 
   return (
     <section aria-labelledby="bestsellers-heading" className="py-8 lg:py-14 bg-white">
       <div className="max-w-[var(--container)] mx-auto px-4 lg:px-8">
-        {/* Festive Coupon Strip with 5px radius */}
+        {/* Festive Coupon Strip */}
         <div className="mb-6 p-3 sm:p-4 rounded-[5px] bg-[#fff0f4] border border-[#ffccd8] flex flex-wrap items-center justify-between gap-3 shadow-xs">
           <div className="flex items-center gap-2">
             <Tag size={18} weight="fill" className="text-crimson shrink-0" />

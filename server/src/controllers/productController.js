@@ -247,3 +247,113 @@ export async function createProduct(req, res) {
   }
 }
 
+// PUT /api/products/:id (Admin Only)
+export async function updateProduct(req, res) {
+  try {
+    const { id } = req.params;
+    const {
+      name,
+      slug,
+      category,
+      description,
+      fabric,
+      care,
+      occasion,
+      price,
+      mrp,
+      sizes,
+      colors,
+      images,
+      isNew,
+      isBestseller,
+      isActive = true,
+    } = req.body;
+
+    if (!pool || !isConnected) {
+      const idx = seedProducts.findIndex((p) => p.id === id);
+      if (idx !== -1) {
+        seedProducts[idx] = {
+          ...seedProducts[idx],
+          name: name || seedProducts[idx].name,
+          slug: slug || seedProducts[idx].slug,
+          category: category || seedProducts[idx].category,
+          description: description || seedProducts[idx].description,
+          fabric: fabric || seedProducts[idx].fabric,
+          care: care || seedProducts[idx].care,
+          price: price ? parseFloat(price) : seedProducts[idx].price,
+          mrp: mrp ? parseFloat(mrp) : seedProducts[idx].mrp,
+          sizes: sizes || seedProducts[idx].sizes,
+          colors: colors || seedProducts[idx].colors,
+          images: images || seedProducts[idx].images,
+          isNew: isNew !== undefined ? Boolean(isNew) : seedProducts[idx].isNew,
+          isBestseller: isBestseller !== undefined ? Boolean(isBestseller) : seedProducts[idx].isBestseller,
+        };
+      }
+      return res.json({ success: true, message: "Product updated successfully (in-memory)" });
+    }
+
+    await pool.query(
+      `UPDATE products SET
+        name = ?,
+        slug = ?,
+        category_name = ?,
+        description = ?,
+        fabric = ?,
+        care = ?,
+        occasion = ?,
+        price = ?,
+        mrp = ?,
+        sizes = ?,
+        colors = ?,
+        images = ?,
+        is_new = ?,
+        is_bestseller = ?,
+        is_active = ?
+       WHERE id = ?`,
+      [
+        name,
+        slug,
+        category,
+        description,
+        fabric,
+        care,
+        JSON.stringify(occasion || []),
+        price,
+        mrp || null,
+        JSON.stringify(sizes || []),
+        JSON.stringify(colors || []),
+        JSON.stringify(images || []),
+        isNew ? 1 : 0,
+        isBestseller ? 1 : 0,
+        isActive ? 1 : 0,
+        id,
+      ]
+    );
+
+    res.json({ success: true, message: "Product updated successfully" });
+  } catch (err) {
+    console.error("Error in updateProduct:", err);
+    res.status(500).json({ success: false, message: err.message || "Failed to update product" });
+  }
+}
+
+// DELETE /api/products/:id (Admin Only)
+export async function deleteProduct(req, res) {
+  try {
+    const { id } = req.params;
+
+    if (!pool || !isConnected) {
+      const idx = seedProducts.findIndex((p) => p.id === id);
+      if (idx !== -1) seedProducts.splice(idx, 1);
+      return res.json({ success: true, message: "Product deleted successfully (in-memory)" });
+    }
+
+    await pool.query("DELETE FROM products WHERE id = ?", [id]);
+    res.json({ success: true, message: "Product deleted successfully" });
+  } catch (err) {
+    console.error("Error in deleteProduct:", err);
+    res.status(500).json({ success: false, message: err.message || "Failed to delete product" });
+  }
+}
+
+

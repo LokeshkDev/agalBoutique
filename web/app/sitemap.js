@@ -1,9 +1,11 @@
 import { getAllSlugs, getCategories } from "@/lib/api";
+import { categories as fallbackCategories } from "@/lib/data/categories";
 
-export default function sitemap() {
+export default async function sitemap() {
   const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://www.agalboutique.com";
   const products = getAllSlugs();
-  const categories = getCategories();
+  const catRes = await getCategories();
+  const categoriesList = catRes?.categories || fallbackCategories;
 
   return [
     {
@@ -18,7 +20,7 @@ export default function sitemap() {
       changeFrequency: "daily",
       priority: 0.9,
     },
-    ...categories.map((c) => ({
+    ...categoriesList.map((c) => ({
       url: `${SITE}/shop?category=${c.slug}`,
       lastModified: new Date(),
       changeFrequency: "weekly",
@@ -32,4 +34,3 @@ export default function sitemap() {
     })),
   ];
 }
-
