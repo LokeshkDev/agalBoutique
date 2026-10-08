@@ -11,6 +11,11 @@ import { useShallow } from "zustand/react/shallow";
 export default function Header() {
   const router = useRouter();
   const pathname = usePathname();
+
+  if (pathname?.startsWith("/admin")) {
+    return null;
+  }
+
   const [searchTerm, setSearchTerm] = useState("");
   const [searchParamsStr, setSearchParamsStr] = useState("");
 

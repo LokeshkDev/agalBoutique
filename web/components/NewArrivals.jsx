@@ -4,20 +4,21 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import ProductCard from "@/components/ProductCard";
 import { getProducts } from "@/lib/api";
-import { getNewArrivals as getFallbackNewArrivals } from "@/lib/data/products";
 
 export default function NewArrivals() {
-  const [products, setProducts] = useState(getFallbackNewArrivals());
+  const [products, setProducts] = useState([]);
 
   useEffect(() => {
     async function loadData() {
       const res = await getProducts({ sort: "newest", limit: 8 });
-      if (res?.success && res.products && res.products.length > 0) {
+      if (res?.success && Array.isArray(res.products)) {
         setProducts(res.products);
       }
     }
     loadData();
   }, []);
+
+  if (products.length === 0) return null;
 
   return (
     <section aria-labelledby="new-arrivals-heading" className="py-8 lg:py-14 bg-[#fbf5f7]">

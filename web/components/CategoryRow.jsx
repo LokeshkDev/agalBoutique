@@ -4,20 +4,21 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { getCategories } from "@/lib/api";
-import { categories as fallbackCategories } from "@/lib/data/categories";
 
 export default function CategoryRow() {
-  const [categories, setCategories] = useState(fallbackCategories);
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
     async function loadData() {
       const res = await getCategories();
-      if (res?.success && Array.isArray(res.categories) && res.categories.length > 0) {
+      if (res?.success && Array.isArray(res.categories)) {
         setCategories(res.categories);
       }
     }
     loadData();
   }, []);
+
+  if (categories.length === 0) return null;
 
   return (
     <section aria-labelledby="categories-heading" className="py-6 lg:py-10 bg-white">
@@ -54,13 +55,19 @@ export default function CategoryRow() {
             >
               {/* Arched Pastel Dome Frame */}
               <div className="relative w-full aspect-[4/5] rounded-t-[999px] rounded-b-[16px] bg-[#f7eaf2] overflow-hidden transition-all duration-300 group-hover:scale-105 group-hover:shadow-md">
-                <Image
-                  src={cat.image}
-                  alt={cat.name}
-                  fill
-                  sizes="(max-width: 639px) 96px, (max-width: 1023px) 112px, 144px"
-                  className="object-cover object-top transition-transform duration-300 group-hover:scale-110"
-                />
+                {cat.image ? (
+                  <Image
+                    src={cat.image}
+                    alt={cat.name}
+                    fill
+                    sizes="(max-width: 639px) 96px, (max-width: 1023px) 112px, 144px"
+                    className="object-cover object-top transition-transform duration-300 group-hover:scale-110"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center font-bold text-plum text-lg">
+                    {cat.name}
+                  </div>
+                )}
               </div>
 
               {/* Clean Centered Category Label */}

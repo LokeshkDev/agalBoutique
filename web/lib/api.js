@@ -136,3 +136,23 @@ export async function adminUpdateCmsSetting(key, value) {
     body: JSON.stringify({ key, value }),
   });
 }
+
+export async function adminCreateCategory(categoryData) {
+  return await apiFetch("/categories", {
+    method: "POST",
+    body: JSON.stringify(categoryData),
+  });
+}
+
+export async function adminUpdateCategory(id, categoryData) {
+  return await apiFetch(`/categories/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(categoryData),
+  });
+}
+
+export async function adminDeleteCategory(id) {
+  return await apiFetch(`/categories/${id}`, {
+    method: "DELETE",
+  });
+}

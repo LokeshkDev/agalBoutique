@@ -15,8 +15,8 @@ export default function BottomNav() {
     }))
   );
 
-  // Hide BottomNav on PDP so the mobile sticky Add to Bag / Buy Now bar sits cleanly at bottom-0
-  if (pathname?.startsWith("/product/")) return null;
+  // Hide BottomNav on admin and PDP pages
+  if (pathname?.startsWith("/admin") || pathname?.startsWith("/product/")) return null;
 
   const totalItems = items.reduce(
     (acc, item) => acc + (item.qty || item.quantity || 1),

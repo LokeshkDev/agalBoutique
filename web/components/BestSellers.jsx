@@ -4,21 +4,22 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import ProductCard from "@/components/ProductCard";
 import { getProducts } from "@/lib/api";
-import { getFeaturedProducts as getFallbackFeatured } from "@/lib/data/products";
 import { Tag } from "@phosphor-icons/react";
 
 export default function BestSellers() {
-  const [bestSellers, setBestSellers] = useState(getFallbackFeatured());
+  const [bestSellers, setBestSellers] = useState([]);
 
   useEffect(() => {
     async function loadData() {
       const res = await getProducts({ sort: "rating", limit: 8 });
-      if (res?.success && res.products && res.products.length > 0) {
+      if (res?.success && Array.isArray(res.products)) {
         setBestSellers(res.products);
       }
     }
     loadData();
   }, []);
+
+  if (bestSellers.length === 0) return null;
 
   return (
     <section aria-labelledby="bestsellers-heading" className="py-8 lg:py-14 bg-white">
@@ -49,7 +50,7 @@ export default function BestSellers() {
               Most Loved Bestsellers
             </h2>
             <p className="text-xs sm:text-sm text-gray-500 mt-0.5 font-sans">
-              Top-rated styles loved by 10,000+ happy shoppers
+              Top-rated styles loved by happy shoppers
             </p>
           </div>
           <Link

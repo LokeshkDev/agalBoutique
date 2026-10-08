@@ -4,8 +4,6 @@ import ShopFilters from "@/components/ShopFilters";
 import JsonLd from "@/components/JsonLd";
 import Footer from "@/components/Footer";
 import { getProducts, getCategories } from "@/lib/api";
-import { products as fallbackProducts } from "@/lib/data/products";
-import { categories as fallbackCategories } from "@/lib/data/categories";
 import { Tote } from "@phosphor-icons/react/dist/ssr";
 
 export async function generateMetadata({ searchParams }) {
@@ -39,11 +37,11 @@ export default async function ShopPage({ searchParams }) {
   const page = parseInt(params?.page || "1", 10);
   const limit = 16;
 
-  // Fetch categories from API with static fallback
+  // Fetch categories from DB API
   const catRes = await getCategories();
-  const categoriesList = catRes?.categories && catRes.categories.length > 0 ? catRes.categories : fallbackCategories;
+  const categoriesList = catRes?.categories || [];
 
-  // Fetch products from API with static fallback
+  // Fetch products from DB API
   const prodRes = await getProducts({
     category,
     search,
@@ -52,31 +50,8 @@ export default async function ShopPage({ searchParams }) {
     limit,
   });
 
-  let productsList = [];
-  let total = 0;
-
-  if (prodRes?.success && Array.isArray(prodRes.products) && prodRes.products.length > 0) {
-    productsList = prodRes.products;
-    total = prodRes.total || productsList.length;
-  } else {
-    // Local fallback filtering
-    let filtered = [...fallbackProducts];
-    if (category) {
-      filtered = filtered.filter((p) => p.category.toLowerCase() === category.toLowerCase());
-    }
-    if (search) {
-      const q = search.toLowerCase();
-      filtered = filtered.filter(
-        (p) => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q)
-      );
-    }
-    if (sort === "price_asc") filtered.sort((a, b) => a.price - b.price);
-    if (sort === "price_desc") filtered.sort((a, b) => b.price - a.price);
-
-    total = filtered.length;
-    productsList = filtered.slice((page - 1) * limit, page * limit);
-  }
-
+  const productsList = prodRes?.products || [];
+  const total = prodRes?.total || productsList.length;
   const totalPages = Math.ceil(total / limit) || 1;
 
   const categoryName = category
@@ -137,7 +112,7 @@ export default async function ShopPage({ searchParams }) {
               No matching products found
             </h2>
             <p className="text-xs sm:text-sm text-gray-500 mb-6 max-w-sm">
-              Try adjusting your selected filters or explore our full catalogue.
+              Try adding products from the Admin Control Panel or adjusting your selected filters.
             </p>
             <Link
               href="/shop"

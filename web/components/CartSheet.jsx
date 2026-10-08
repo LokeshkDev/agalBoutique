@@ -8,9 +8,11 @@ import Button from "@/components/Button";
 import { formatPrice } from "@/lib/format";
 import { Minus, Plus, Trash, Tote } from "@phosphor-icons/react";
 import Image from "next/image";
-import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export default function CartSheet() {
+  const pathname = usePathname();
+  if (pathname?.startsWith("/admin")) return null;
   const { items, open } = useCart(
     useShallow((s) => ({ items: s.items || [], open: s.open }))
   );
