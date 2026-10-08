@@ -110,6 +110,12 @@ export async function adminUpdateOrderStatus(orderId, orderStatus, paymentStatus
   });
 }
 
+export async function adminDeleteOrder(orderId) {
+  return await apiFetch(`/orders/${orderId}`, {
+    method: "DELETE",
+  });
+}
+
 export async function adminCreateProduct(productData) {
   return await apiFetch("/products", {
     method: "POST",

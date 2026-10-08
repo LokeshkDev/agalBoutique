@@ -253,6 +253,25 @@ export async function updateOrderStatus(req, res) {
   }
 }
 
+// DELETE /api/orders/:id (Admin Only)
+export async function deleteOrder(req, res) {
+  try {
+    const { id } = req.params;
+
+    if (!pool || !isConnected) {
+      const idx = inMemoryOrders.findIndex((o) => o.orderNumber === id || String(o.id) === String(id));
+      if (idx !== -1) inMemoryOrders.splice(idx, 1);
+      return res.json({ success: true, message: "Order deleted (in-memory)" });
+    }
+
+    await pool.query("DELETE FROM orders WHERE id = ? OR order_number = ?", [id, id]);
+    res.json({ success: true, message: "Order deleted successfully" });
+  } catch (err) {
+    console.error("Error in deleteOrder:", err);
+    res.status(500).json({ success: false, message: "Failed to delete order" });
+  }
+}
+
 // GET /api/admin/stats (Admin Only)
 export async function getAdminStats(req, res) {
   try {
