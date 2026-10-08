@@ -782,47 +782,135 @@ export default function AdminPage() {
               )}
             </div>
 
-            {/* Hero Banner */}
+            {/* Hero Carousel Slides Manager */}
             <div className="space-y-4">
-              <h3 className="text-sm font-bold text-plum border-l-4 border-plum pl-2">Hero Carousel Banner</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Banner Headline</label>
-                  <input
-                    type="text"
-                    value={cms.hero_banner?.title || ""}
-                    onChange={(e) => setCms({ ...cms, hero_banner: { ...cms.hero_banner, title: e.target.value } })}
-                    className="w-full h-10 px-3 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-plum"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Banner Subtitle</label>
-                  <input
-                    type="text"
-                    value={cms.hero_banner?.subtitle || ""}
-                    onChange={(e) => setCms({ ...cms, hero_banner: { ...cms.hero_banner, subtitle: e.target.value } })}
-                    className="w-full h-10 px-3 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-plum"
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Hero Image URL</label>
-                  <input
-                    type="text"
-                    value={cms.hero_banner?.banner_url || ""}
-                    onChange={(e) => setCms({ ...cms, hero_banner: { ...cms.hero_banner, banner_url: e.target.value } })}
-                    className="w-full h-10 px-3 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-plum font-mono"
-                  />
-                </div>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-plum border-l-4 border-plum pl-2">Hero Carousel Banners (Database)</h3>
+                <button
+                  onClick={() => {
+                    const newSlides = [
+                      ...(cms.hero_slides || []),
+                      {
+                        id: Date.now(),
+                        title: "New Festive Collection",
+                        subtitle: "Handcrafted boutique styles",
+                        offer: "Flat 15% OFF",
+                        link: "/shop",
+                        cta: "Shop Edit",
+                        badge: "Exclusive",
+                        image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=1200&q=80",
+                      },
+                    ];
+                    setCms({ ...cms, hero_slides: newSlides });
+                  }}
+                  className="px-3 py-1.5 bg-emerald-700 text-white text-xs font-bold rounded-lg hover:bg-emerald-800 transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  <Plus size={14} /> Add Slide
+                </button>
               </div>
+
+              <div className="space-y-4">
+                {(cms.hero_slides || []).map((slide, idx) => (
+                  <div key={slide.id || idx} className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-3">
+                    <div className="flex items-center justify-between border-b border-gray-200 pb-2">
+                      <span className="text-xs font-bold text-plum">Slide #{idx + 1}</span>
+                      <button
+                        onClick={() => {
+                          const updated = (cms.hero_slides || []).filter((_, i) => i !== idx);
+                          setCms({ ...cms, hero_slides: updated });
+                          handleSaveCms("hero_slides", updated);
+                        }}
+                        className="text-xs text-red-600 hover:bg-red-50 p-1 rounded font-bold cursor-pointer"
+                      >
+                        Delete Slide
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-gray-700 mb-1">Headline Title</label>
+                        <input
+                          type="text"
+                          value={slide.title || ""}
+                          onChange={(e) => {
+                            const updated = [...(cms.hero_slides || [])];
+                            updated[idx].title = e.target.value;
+                            setCms({ ...cms, hero_slides: updated });
+                          }}
+                          className="w-full h-9 px-2.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-plum"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-gray-700 mb-1">Subtitle Description</label>
+                        <input
+                          type="text"
+                          value={slide.subtitle || ""}
+                          onChange={(e) => {
+                            const updated = [...(cms.hero_slides || [])];
+                            updated[idx].subtitle = e.target.value;
+                            setCms({ ...cms, hero_slides: updated });
+                          }}
+                          className="w-full h-9 px-2.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-plum"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-gray-700 mb-1">Offer Badge / Code Line</label>
+                        <input
+                          type="text"
+                          value={slide.offer || ""}
+                          onChange={(e) => {
+                            const updated = [...(cms.hero_slides || [])];
+                            updated[idx].offer = e.target.value;
+                            setCms({ ...cms, hero_slides: updated });
+                          }}
+                          className="w-full h-9 px-2.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-plum"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-gray-700 mb-1">Target Link URL</label>
+                        <input
+                          type="text"
+                          value={slide.link || ""}
+                          onChange={(e) => {
+                            const updated = [...(cms.hero_slides || [])];
+                            updated[idx].link = e.target.value;
+                            setCms({ ...cms, hero_slides: updated });
+                          }}
+                          className="w-full h-9 px-2.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-plum font-mono"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <label className="block text-[11px] font-semibold text-gray-700 mb-1">Banner Image URL</label>
+                        <input
+                          type="text"
+                          value={slide.image || slide.banner_url || ""}
+                          onChange={(e) => {
+                            const updated = [...(cms.hero_slides || [])];
+                            updated[idx].image = e.target.value;
+                            updated[idx].banner_url = e.target.value;
+                            setCms({ ...cms, hero_slides: updated });
+                          }}
+                          className="w-full h-9 px-2.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-plum font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
               <button
-                onClick={() => handleSaveCms("hero_banner", cms.hero_banner)}
-                className="px-4 py-2 bg-plum text-white text-xs font-bold rounded-lg hover:bg-plum-900 transition-colors cursor-pointer"
+                onClick={() => handleSaveCms("hero_slides", cms.hero_slides)}
+                className="px-4 py-2 bg-plum text-white text-xs font-bold rounded-lg hover:bg-plum-900 transition-colors cursor-pointer shadow-xs"
               >
-                Save Hero Banner
+                Save All Hero Slides to DB
               </button>
             </div>
 
-            {/* Announcement Bar */}
+            {/* Top Announcement Bar */}
             <div className="space-y-4 pt-4 border-t border-gray-100">
               <h3 className="text-sm font-bold text-plum border-l-4 border-plum pl-2">Top Announcement Bar</h3>
               <div>

@@ -1,27 +1,72 @@
 import { pool, isConnected } from "../config/db.js";
 
-// Default CMS settings in case DB is uninitialized or offline
+// Default CMS settings stored in DB
 const defaultCmsSettings = {
-  hero_banner: {
-    title: "Grand Festive Collection 2026",
-    subtitle: "Handcrafted Silk Sarees, Designer Kurtis & Bespoke Stitching",
-    badge: "New Arrival 2026",
-    banner_url: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=1600&q=80",
-    button_text: "Explore Collection",
-    button_link: "/shop",
-  },
+  hero_slides: [
+    {
+      id: 1,
+      title: "Grand Festive Handloom Mela",
+      subtitle: "Pure Kanchipuram Silks, Cambric Cotton Kurtis & Suits",
+      offer: "Flat 15% OFF with Code FESTIVE15 · Free Delivery Across India",
+      link: "/shop?category=sarees",
+      cta: "Shop Festive Edit",
+      badge: "Festive Exclusive",
+      image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=1200&q=80",
+    },
+    {
+      id: 2,
+      title: "3–5 Days Custom Blouse Stitching",
+      subtitle: "Send measurements on WhatsApp or pick standard sizes",
+      offer: "Master Craftsmanship from Tamil Nadu · Free Alteration Guarantee",
+      link: "/shop?category=blouses",
+      cta: "Explore Blouse Styles",
+      badge: "Bespoke Tailoring",
+      image: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1200&q=80",
+    },
+    {
+      id: 3,
+      title: "Pure Cotton Kurtis & Full Sets",
+      subtitle: "Breathable cambric cottons, straight cuts & festive Anarkalis",
+      offer: "Daily Wear & Office Styles starting from ₹699",
+      link: "/shop?category=kurtis",
+      cta: "Shop Kurtis & Sets",
+      badge: "Trending Daily Wear",
+      image: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=1200&q=80",
+    },
+  ],
   announcement_bar: {
     text: "✨ Free Express Delivery across India on orders above ₹999 | Direct WhatsApp Support",
     enabled: true,
   },
-  promo_banner: {
-    title: "Bespoke Custom Stitching",
-    subtitle: "Get your blouses & lehengas custom stitched by master tailors in Chennai",
-    image_url: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800&q=80",
-    button_text: "Book Custom Order",
-    button_link: "/shop?category=blouses",
-    enabled: true,
-  },
+  testimonials: [
+    {
+      id: 1,
+      name: "Priya Sundaram",
+      location: "Chennai, Tamil Nadu",
+      rating: 5,
+      tag: "Custom Blouse Stitching",
+      date: "Verified Buyer",
+      review: "Ordered custom blouse stitching for my Kanchipuram silk saree. The fit was 100% accurate to the measurements I sent on WhatsApp! The neck piping and dori work were so neat.",
+    },
+    {
+      id: 2,
+      name: "Kavitha Rangarajan",
+      location: "Coimbatore, Tamil Nadu",
+      rating: 5,
+      tag: "Pure Cotton Kurti Set",
+      date: "Verified Buyer",
+      review: "The cambric cotton fabric is exceptionally soft and breathable for daily office wear. Delivery reached Coimbatore in just 2 days.",
+    },
+    {
+      id: 3,
+      name: "Ananya Deshmukh",
+      location: "Bengaluru, Karnataka",
+      rating: 5,
+      tag: "Festive Silk Anarkali",
+      date: "Verified Buyer",
+      review: "Received so many compliments at my cousin's sangeet! The zari border on the dupatta looks rich and royal.",
+    },
+  ],
   store_info: {
     phone: "+91 98765 43210",
     whatsapp: "+91 98765 43210",
@@ -113,4 +158,3 @@ export async function updateCmsSettings(req, res) {
     res.status(500).json({ success: false, message: "Failed to update CMS setting" });
   }
 }
-

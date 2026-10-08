@@ -1,80 +1,41 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Star, CaretLeft, CaretRight, CheckCircle, Quotes } from "@phosphor-icons/react";
-
-const TESTIMONIALS = [
-  {
-    id: 1,
-    name: "Priya Sundaram",
-    location: "Chennai, Tamil Nadu",
-    rating: 5,
-    tag: "Custom Blouse Stitching",
-    date: "Verified Buyer",
-    review:
-      "Ordered custom blouse stitching for my Kanchipuram silk saree. The fit was 100% accurate to the measurements I sent on WhatsApp! The neck piping and dori work were so neat. Highly recommend Agal Boutique.",
-  },
-  {
-    id: 2,
-    name: "Kavitha Rangarajan",
-    location: "Coimbatore, Tamil Nadu",
-    rating: 5,
-    tag: "Pure Cotton Kurti Set",
-    date: "Verified Buyer",
-    review:
-      "The cambric cotton fabric is exceptionally soft and breathable for daily office wear. The colors didn't bleed even after multiple washes. Delivery reached Coimbatore in just 2 days.",
-  },
-  {
-    id: 3,
-    name: "Ananya Deshmukh",
-    location: "Bengaluru, Karnataka",
-    rating: 5,
-    tag: "Festive Silk Anarkali",
-    date: "Verified Buyer",
-    review:
-      "Received so many compliments at my cousin's sangeet! The zari border on the dupatta looks rich and royal. The dress arrived neatly packed with zero wrinkles.",
-  },
-  {
-    id: 4,
-    name: "Meenakshi Natarajan",
-    location: "Madurai, Tamil Nadu",
-    rating: 5,
-    tag: "Girls Pattu Pavadai",
-    date: "Verified Buyer",
-    review:
-      "Bought the yellow & magenta pattu pavadai for my 5-year-old daughter's birthday. The pure cotton inner lining ensured she was comfortable all day without any itching. Beautiful traditional weave.",
-  },
-  {
-    id: 5,
-    name: "Deepa Krishnan",
-    location: "Hyderabad, Telangana",
-    rating: 5,
-    tag: "Handloom Saree & Blouse",
-    date: "Verified Buyer",
-    review:
-      "The drape of the Chettinad cotton saree is so effortless. Fast dispatch and prompt updates on WhatsApp from the team. Will definitely be ordering my festive wardrobe from here again!",
-  },
-];
+import { Star, CaretLeft, CaretRight, CheckCircle } from "@phosphor-icons/react";
+import { getCmsSettings } from "@/lib/api";
 
 export default function TestimonialsSlider() {
+  const [testimonials, setTestimonials] = useState([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
+  useEffect(() => {
+    async function loadTestimonials() {
+      const res = await getCmsSettings();
+      if (res?.success && res.settings?.testimonials && Array.isArray(res.settings.testimonials)) {
+        setTestimonials(res.settings.testimonials);
+      }
+    }
+    loadTestimonials();
+  }, []);
+
   // Auto-scroll on slider
   useEffect(() => {
-    if (isPaused) return;
+    if (isPaused || testimonials.length === 0) return;
     const timer = setInterval(() => {
-      setCurrentIdx((prev) => (prev + 1) % TESTIMONIALS.length);
+      setCurrentIdx((prev) => (prev + 1) % testimonials.length);
     }, 4500);
     return () => clearInterval(timer);
-  }, [isPaused]);
+  }, [isPaused, testimonials.length]);
+
+  if (testimonials.length === 0) return null;
 
   const handlePrev = () => {
-    setCurrentIdx((prev) => (prev - 1 + TESTIMONIALS.length) % TESTIMONIALS.length);
+    setCurrentIdx((prev) => (prev - 1 + testimonials.length) % testimonials.length);
   };
 
   const handleNext = () => {
-    setCurrentIdx((prev) => (prev + 1) % TESTIMONIALS.length);
+    setCurrentIdx((prev) => (prev + 1) % testimonials.length);
   };
 
   return (
@@ -103,32 +64,35 @@ export default function TestimonialsSlider() {
           </div>
 
           {/* Navigation Arrows */}
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handlePrev}
-              aria-label="Previous testimonial"
-              className="w-10 h-10 rounded-[5px] bg-white border border-gray-200 shadow-xs flex items-center justify-center text-gray-700 hover:text-plum hover:border-plum transition-colors cursor-pointer"
-            >
-              <CaretLeft size={18} weight="bold" />
-            </button>
-            <button
-              type="button"
-              onClick={handleNext}
-              aria-label="Next testimonial"
-              className="w-10 h-10 rounded-[5px] bg-white border border-gray-200 shadow-xs flex items-center justify-center text-gray-700 hover:text-plum hover:border-plum transition-colors cursor-pointer"
-            >
-              <CaretRight size={18} weight="bold" />
-            </button>
-          </div>
+          {testimonials.length > 1 && (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handlePrev}
+                aria-label="Previous testimonial"
+                className="w-10 h-10 rounded-[5px] bg-white border border-gray-200 shadow-xs flex items-center justify-center text-gray-700 hover:text-plum hover:border-plum transition-colors cursor-pointer"
+              >
+                <CaretLeft size={18} weight="bold" />
+              </button>
+              <button
+                type="button"
+                onClick={handleNext}
+                aria-label="Next testimonial"
+                className="w-10 h-10 rounded-[5px] bg-white border border-gray-200 shadow-xs flex items-center justify-center text-gray-700 hover:text-plum hover:border-plum transition-colors cursor-pointer"
+              >
+                <CaretRight size={18} weight="bold" />
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Desktop 3-Card Carousel / Mobile 1-Card Slider */}
+        {/* Carousel */}
         <div className="relative">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
             {[0, 1, 2].map((offset) => {
-              const item =
-                TESTIMONIALS[(currentIdx + offset) % TESTIMONIALS.length];
+              const item = testimonials[(currentIdx + offset) % testimonials.length];
+              if (!item) return null;
+
               const isHiddenOnMobile = offset > 0 ? "hidden md:block" : "";
               const isHiddenOnTablet = offset > 1 ? "hidden lg:block" : "";
 
@@ -141,13 +105,15 @@ export default function TestimonialsSlider() {
                     {/* Stars + Tag */}
                     <div className="flex items-center justify-between">
                       <div className="flex text-[#238b45] gap-0.5">
-                        {[...Array(item.rating)].map((_, i) => (
+                        {[...Array(item.rating || 5)].map((_, i) => (
                           <Star key={i} size={16} weight="fill" />
                         ))}
                       </div>
-                      <span className="text-[11px] font-bold text-plum bg-plum-50 px-2 py-0.5 rounded-[4px]">
-                        {item.tag}
-                      </span>
+                      {item.tag && (
+                        <span className="text-[11px] font-bold text-plum bg-plum-50 px-2 py-0.5 rounded-[4px]">
+                          {item.tag}
+                        </span>
+                      )}
                     </div>
 
                     {/* Review text */}
@@ -156,7 +122,7 @@ export default function TestimonialsSlider() {
                     </p>
                   </div>
 
-                  {/* Customer author footer */}
+                  {/* Author footer */}
                   <div className="pt-4 mt-4 border-t border-gray-100 flex items-center justify-between">
                     <div>
                       <h4 className="text-xs sm:text-sm font-bold text-gray-900">
@@ -167,7 +133,7 @@ export default function TestimonialsSlider() {
 
                     <div className="flex items-center gap-1 text-[11px] font-semibold text-[#238b45]">
                       <CheckCircle size={14} weight="fill" />
-                      {item.date}
+                      {item.date || "Verified Buyer"}
                     </div>
                   </div>
                 </div>
@@ -175,23 +141,24 @@ export default function TestimonialsSlider() {
             })}
           </div>
 
-          {/* Dots Indicator for Mobile & Tablet */}
-          <div className="flex justify-center gap-1.5 mt-6">
-            {TESTIMONIALS.map((_, idx) => (
-              <button
-                key={idx}
-                type="button"
-                aria-label={`Go to slide ${idx + 1}`}
-                onClick={() => setCurrentIdx(idx)}
-                className={`h-1.5 rounded-full transition-all duration-200 cursor-pointer ${
-                  currentIdx === idx ? "w-6 bg-plum" : "w-2 bg-gray-300"
-                }`}
-              />
-            ))}
-          </div>
+          {/* Dots Indicator */}
+          {testimonials.length > 1 && (
+            <div className="flex justify-center gap-1.5 mt-6">
+              {testimonials.map((_, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  aria-label={`Go to slide ${idx + 1}`}
+                  onClick={() => setCurrentIdx(idx)}
+                  className={`h-1.5 rounded-full transition-all duration-200 cursor-pointer ${
+                    currentIdx === idx ? "w-6 bg-plum" : "w-2 bg-gray-300"
+                  }`}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </section>
   );
 }
-
