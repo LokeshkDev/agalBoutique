@@ -13,6 +13,12 @@ import orderRoutes from "./routes/orders.js";
 import paymentRoutes from "./routes/payments.js";
 import adminRoutes from "./routes/admin.js";
 import cmsRoutes from "./routes/cms.js";
+import uploadRoutes from "./routes/upload.js";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
@@ -60,6 +66,9 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// Serve Uploaded Images statically if stored locally
+app.use("/uploads", express.static(path.join(__dirname, "../public/uploads")));
+
 // API Routes
 app.use("/api/products", productRoutes);
 app.use("/api/categories", categoryRoutes);
@@ -67,6 +76,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/cms", cmsRoutes);
+app.use("/api/admin/upload", uploadRoutes);
 
 // 404 Handler
 app.use((req, res) => {

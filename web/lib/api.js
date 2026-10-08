@@ -156,3 +156,31 @@ export async function adminDeleteCategory(id) {
     method: "DELETE",
   });
 }
+
+// 6. Cloudflare R2 Image Upload API
+export async function adminUploadImage(file) {
+  const formData = new FormData();
+  formData.append("image", file);
+
+  const url = `${API_BASE}/admin/upload`;
+  const defaultHeaders = {};
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("agal_admin_token");
+    if (token) {
+      defaultHeaders["Authorization"] = `Bearer ${token}`;
+    }
+  }
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: defaultHeaders,
+      body: formData,
+      credentials: "include",
+    });
+    return await res.json();
+  } catch (err) {
+    console.error("Image upload failed:", err);
+    return { success: false, message: err.message };
+  }
+}

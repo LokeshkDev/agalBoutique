@@ -17,6 +17,7 @@ import {
   Eye,
   SquaresFour,
 } from "@phosphor-icons/react";
+import ImageUploadInput from "@/components/ImageUploadInput";
 import {
   adminLogin,
   adminGetStats,
@@ -884,17 +885,15 @@ export default function AdminPage() {
                       </div>
 
                       <div className="sm:col-span-2">
-                        <label className="block text-[11px] font-semibold text-gray-700 mb-1">Banner Image URL</label>
-                        <input
-                          type="text"
+                        <ImageUploadInput
+                          label="Banner Image (Cloudflare R2 + WebP Optimized)"
                           value={slide.image || slide.banner_url || ""}
-                          onChange={(e) => {
+                          onChange={(url) => {
                             const updated = [...(cms.hero_slides || [])];
-                            updated[idx].image = e.target.value;
-                            updated[idx].banner_url = e.target.value;
+                            updated[idx].image = url;
+                            updated[idx].banner_url = url;
                             setCms({ ...cms, hero_slides: updated });
                           }}
-                          className="w-full h-9 px-2.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-plum font-mono"
                         />
                       </div>
                     </div>
@@ -1038,16 +1037,11 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Image URL</label>
-                <input
-                  type="text"
-                  value={productForm.imageUrl}
-                  onChange={(e) => setProductForm({ ...productForm, imageUrl: e.target.value })}
-                  className="w-full h-10 px-3 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-plum font-mono"
-                  placeholder="https://images.unsplash.com/..."
-                />
-              </div>
+              <ImageUploadInput
+                label="Product Main Image (Cloudflare R2 + WebP Optimized)"
+                value={productForm.imageUrl}
+                onChange={(url) => setProductForm({ ...productForm, imageUrl: url })}
+              />
 
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Description</label>
@@ -1134,16 +1128,11 @@ export default function AdminPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Category Image URL</label>
-                <input
-                  type="text"
-                  value={categoryForm.image}
-                  onChange={(e) => setCategoryForm({ ...categoryForm, image: e.target.value })}
-                  className="w-full h-10 px-3 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-plum font-mono"
-                  placeholder="https://images.unsplash.com/..."
-                />
-              </div>
+              <ImageUploadInput
+                label="Category Display Image (Cloudflare R2 + WebP Optimized)"
+                value={categoryForm.image}
+                onChange={(url) => setCategoryForm({ ...categoryForm, image: url })}
+              />
 
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Description</label>
