@@ -6,8 +6,51 @@ import Link from "next/link";
 import { Sparkle } from "@phosphor-icons/react";
 import { getCmsSettings } from "@/lib/api";
 
+const DEFAULT_SLIDES = [
+  {
+    id: 1,
+    title: "Grand Festive Handloom Mela",
+    subtitle: "Pure Kanchipuram Silks, Cambric Cotton Kurtis & Suits",
+    offer: "Flat 15% OFF with Code FESTIVE15 · Free Delivery Across India",
+    link: "/shop?category=sarees",
+    cta: "Shop Festive Edit",
+    badge: "Festive Exclusive",
+    image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=1200&q=80",
+  },
+  {
+    id: 2,
+    title: "3–5 Days Custom Blouse Stitching",
+    subtitle: "Send measurements on WhatsApp or pick standard sizes",
+    offer: "Master Craftsmanship from Tamil Nadu · Free Alteration Guarantee",
+    link: "/shop?category=blouses",
+    cta: "Explore Blouse Styles",
+    badge: "Bespoke Tailoring",
+    image: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1200&q=80",
+  },
+  {
+    id: 3,
+    title: "Pure Cotton Kurtis & Full Sets",
+    subtitle: "Breathable cambric cottons, straight cuts & festive Anarkalis",
+    offer: "Daily Wear & Office Styles starting from ₹699",
+    link: "/shop?category=kurtis",
+    cta: "Shop Kurtis & Sets",
+    badge: "Trending Daily Wear",
+    image: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=1200&q=80",
+  },
+  {
+    id: 4,
+    title: "Girls Pattu Pavadai & Kidswear",
+    subtitle: "Traditional South Indian jacquard silk sets with soft cotton lining",
+    offer: "Ages 2 to 12 Years · Starting from ₹699",
+    link: "/shop?category=kidswear",
+    cta: "View Kids Collection",
+    badge: "Kids Special",
+    image: "https://images.unsplash.com/photo-1622290291468-a28f7a7dc6a8?w=1200&q=80",
+  },
+];
+
 export default function HeroCarousel() {
-  const [slides, setSlides] = useState([]);
+  const [slides, setSlides] = useState(DEFAULT_SLIDES);
   const [current, setCurrent] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const touchStartX = useRef(0);
@@ -16,7 +59,7 @@ export default function HeroCarousel() {
   useEffect(() => {
     async function loadCmsSlides() {
       const res = await getCmsSettings();
-      if (res?.success && res.settings?.hero_slides && Array.isArray(res.settings.hero_slides)) {
+      if (res?.success && res.settings?.hero_slides && Array.isArray(res.settings.hero_slides) && res.settings.hero_slides.length > 0) {
         setSlides(res.settings.hero_slides);
       }
     }

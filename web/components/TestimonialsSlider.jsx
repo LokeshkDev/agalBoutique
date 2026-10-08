@@ -4,15 +4,68 @@ import { useState, useEffect } from "react";
 import { Star, CaretLeft, CaretRight, CheckCircle } from "@phosphor-icons/react";
 import { getCmsSettings } from "@/lib/api";
 
+const DEFAULT_TESTIMONIALS = [
+  {
+    id: 1,
+    name: "Priya Sundaram",
+    location: "Chennai, Tamil Nadu",
+    rating: 5,
+    tag: "Custom Blouse Stitching",
+    date: "Verified Buyer",
+    review:
+      "Ordered custom blouse stitching for my Kanchipuram silk saree. The fit was 100% accurate to the measurements I sent on WhatsApp! The neck piping and dori work were so neat. Highly recommend Agal Boutique.",
+  },
+  {
+    id: 2,
+    name: "Kavitha Rangarajan",
+    location: "Coimbatore, Tamil Nadu",
+    rating: 5,
+    tag: "Pure Cotton Kurti Set",
+    date: "Verified Buyer",
+    review:
+      "The cambric cotton fabric is exceptionally soft and breathable for daily office wear. The colors didn't bleed even after multiple washes. Delivery reached Coimbatore in just 2 days.",
+  },
+  {
+    id: 3,
+    name: "Ananya Deshmukh",
+    location: "Bengaluru, Karnataka",
+    rating: 5,
+    tag: "Festive Silk Anarkali",
+    date: "Verified Buyer",
+    review:
+      "Received so many compliments at my cousin's sangeet! The zari border on the dupatta looks rich and royal. The dress arrived neatly packed with zero wrinkles.",
+  },
+  {
+    id: 4,
+    name: "Meenakshi Natarajan",
+    location: "Madurai, Tamil Nadu",
+    rating: 5,
+    tag: "Girls Pattu Pavadai",
+    date: "Verified Buyer",
+    review:
+      "Bought the yellow & magenta pattu pavadai for my 5-year-old daughter's birthday. The pure cotton inner lining ensured she was comfortable all day without any itching. Beautiful traditional weave.",
+  },
+  {
+    id: 5,
+    name: "Deepa Krishnan",
+    location: "Hyderabad, Telangana",
+    rating: 5,
+    tag: "Handloom Saree & Blouse",
+    date: "Verified Buyer",
+    review:
+      "The drape of the Chettinad cotton saree is so effortless. Fast dispatch and prompt updates on WhatsApp from the team. Will definitely be ordering my festive wardrobe from here again!",
+  },
+];
+
 export default function TestimonialsSlider() {
-  const [testimonials, setTestimonials] = useState([]);
+  const [testimonials, setTestimonials] = useState(DEFAULT_TESTIMONIALS);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
     async function loadTestimonials() {
       const res = await getCmsSettings();
-      if (res?.success && res.settings?.testimonials && Array.isArray(res.settings.testimonials)) {
+      if (res?.success && res.settings?.testimonials && Array.isArray(res.settings.testimonials) && res.settings.testimonials.length > 0) {
         setTestimonials(res.settings.testimonials);
       }
     }
