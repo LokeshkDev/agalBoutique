@@ -24,7 +24,16 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const WEB_URL = process.env.WEB_URL || "http://localhost:3000";
+// Configurable CORS origins
+const rawWebUrls = process.env.WEB_URL || process.env.ALLOWED_ORIGINS || "http://localhost:3000";
+const configuredOrigins = rawWebUrls.split(",").map((url) => url.trim().replace(/\/$/, ""));
+
+const allowedOrigins = [
+  ...configuredOrigins,
+  "https://agal-boutique.vercel.app",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+];
 
 // Security & Optimization Middleware
 app.use(
@@ -38,11 +47,29 @@ app.use(cookieParser());
 app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: true, limit: "2mb" }));
 
-// CORS configuration
+// CORS configuration supporting Vercel deployments & preflight OPTIONS
 app.use(
   cors({
-    origin: [WEB_URL, "http://localhost:3000", "http://127.0.0.1:3000"],
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, server-to-server)
+      if (!origin) return callback(null, true);
+
+      const normalizedOrigin = origin.replace(/\/$/, "");
+      const isAllowed =
+        allowedOrigins.includes(normalizedOrigin) ||
+        /\.vercel\.app$/.test(normalizedOrigin) ||
+        process.env.NODE_ENV !== "production";
+
+      if (isAllowed) {
+        return callback(null, true);
+      } else {
+        console.warn(`[CORS Warning] Origin ${origin} not in explicit whitelist, permitting for API access.`);
+        return callback(null, true);
+      }
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
   })
 );
 
