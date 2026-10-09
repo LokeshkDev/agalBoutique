@@ -2,6 +2,7 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import sharp from "sharp";
 import path from "path";
 import fs from "fs";
+import dotenv from "dotenv";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -9,11 +10,30 @@ const __dirname = path.dirname(__filename);
 
 // Initialize S3Client for Cloudflare R2
 function getR2Client() {
-  const accountId = process.env.R2_ACCOUNT_ID;
-  const accessKeyId = process.env.R2_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
+  dotenv.config();
+  let accountId = (process.env.R2_ACCOUNT_ID || "").trim();
+  const accessKeyId = (process.env.R2_ACCESS_KEY_ID || "").trim();
+  const secretAccessKey = (process.env.R2_SECRET_ACCESS_KEY || "").trim();
 
-  if (!accountId || !accessKeyId || !secretAccessKey) {
+  // Sanitize accountId in case full URL was passed in .env
+  accountId = accountId
+    .replace(/^https?:\/\//, "")
+    .replace(/\.r2\.cloudflarestorage\.com.*$/, "")
+    .replace(/\/$/, "");
+
+  if (
+    !accountId ||
+    !accessKeyId ||
+    !secretAccessKey ||
+    accountId.includes("your_") ||
+    accessKeyId.includes("your_") ||
+    secretAccessKey.includes("your_") ||
+    accountId.includes("placeholder") ||
+    accountId.length !== 32
+  ) {
+    if (accountId && accountId.length !== 32 && !accountId.includes("your_")) {
+      console.warn(`[R2 Warning] R2_ACCOUNT_ID length is ${accountId.length} chars (expected 32 hex chars). Falling back to local storage.`);
+    }
     return null;
   }
 
@@ -49,11 +69,12 @@ export async function optimizeAndUploadImage(buffer, originalName = "image.jpg")
   const key = `uploads/${filename}`;
 
   const r2Client = getR2Client();
-  const bucketName = process.env.R2_BUCKET_NAME || "agal-boutique-images";
-  const publicDomain = process.env.R2_PUBLIC_DOMAIN;
+  const bucketName = process.env.R2_BUCKET_NAME || "agalboutique";
+  const publicDomain = (process.env.R2_PUBLIC_DOMAIN || "").trim();
+  const isPublicDomainValid = publicDomain && !publicDomain.includes("xxxxxx") && !publicDomain.includes("your_");
 
-  // 2. Upload to Cloudflare R2 if credentials exist
-  if (r2Client && publicDomain) {
+  // 2. Upload to Cloudflare R2 if valid credentials exist
+  if (r2Client && isPublicDomainValid) {
     try {
       await r2Client.send(
         new PutObjectCommand({
@@ -67,6 +88,7 @@ export async function optimizeAndUploadImage(buffer, originalName = "image.jpg")
 
       const cleanDomain = publicDomain.endsWith("/") ? publicDomain.slice(0, -1) : publicDomain;
       const publicUrl = `${cleanDomain}/${key}`;
+      console.log(`[Cloudflare R2] Successfully uploaded ${key} -> ${publicUrl}`);
 
       return {
         url: publicUrl,
@@ -79,7 +101,7 @@ export async function optimizeAndUploadImage(buffer, originalName = "image.jpg")
     }
   }
 
-  // 3. Fallback to local uploads folder if R2 credentials are not set
+  // 3. Fallback to local uploads folder if R2 credentials are not set or invalid
   const publicDir = path.join(__dirname, "../../public/uploads");
   if (!fs.existsSync(publicDir)) {
     fs.mkdirSync(publicDir, { recursive: true });
@@ -88,7 +110,9 @@ export async function optimizeAndUploadImage(buffer, originalName = "image.jpg")
   const filePath = path.join(publicDir, filename);
   fs.writeFileSync(filePath, optimizedBuffer);
 
-  const localUrl = `/uploads/${filename}`;
+  const serverBaseUrl = (process.env.BACKEND_URL || process.env.SERVER_URL || `http://localhost:${process.env.PORT || 5000}`).replace(/\/$/, "");
+  const localUrl = `${serverBaseUrl}/uploads/${filename}`;
+
   return {
     url: localUrl,
     originalSizeKb,

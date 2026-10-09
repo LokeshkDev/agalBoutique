@@ -19,7 +19,8 @@ import {
   Money,
 } from "@phosphor-icons/react";
 
-import { submitOrderToBackend } from "@/lib/api";
+import { submitOrderToBackend, getCmsSettings } from "@/lib/api";
+import { useEffect } from "react";
 
 export default function CheckoutPage() {
   const { items, clear } = useCart(
@@ -47,13 +48,32 @@ export default function CheckoutPage() {
   // Only 2 payment methods: 'online' or 'cod'
   const [paymentMethod, setPaymentMethod] = useState("online");
 
+  // Dynamic Delivery settings from Admin CMS
+  const [deliverySettings, setDeliverySettings] = useState({
+    standardFee: 79,
+    freeThreshold: 999,
+    estimateDays: "3-5 Business Days",
+  });
+
+  useEffect(() => {
+    getCmsSettings().then((res) => {
+      if (res?.settings?.delivery_settings) {
+        setDeliverySettings({
+          standardFee: Number(res.settings.delivery_settings.standardFee ?? 79),
+          freeThreshold: Number(res.settings.delivery_settings.freeThreshold ?? 999),
+          estimateDays: res.settings.delivery_settings.estimateDays || "3-5 Business Days",
+        });
+      }
+    });
+  }, []);
+
   const subtotal = items.reduce(
     (sum, item) => sum + item.price * (item.qty || item.quantity || 1),
     0
   );
-  const shippingFee = subtotal >= 999 ? 0 : 79;
-  const codFee = paymentMethod === "cod" ? 49 : 0;
-  const total = subtotal + shippingFee + codFee;
+  const shippingFee = subtotal >= deliverySettings.freeThreshold ? 0 : deliverySettings.standardFee;
+  const codFee = 0;
+  const total = subtotal + shippingFee;
 
   const handleSaveAddress = (e) => {
     e.preventDefault();
@@ -264,12 +284,6 @@ export default function CheckoutPage() {
                   {shippingFee === 0 ? "FREE" : formatPrice(shippingFee)}
                 </span>
               </div>
-              {paymentMethod === "cod" && (
-                <div className="flex justify-between">
-                  <span>COD Handling Fee</span>
-                  <span className="font-bold text-gray-800">₹49</span>
-                </div>
-              )}
             </div>
           </div>
         )}
@@ -569,12 +583,12 @@ export default function CheckoutPage() {
                         </p>
                       </div>
                       <p className="text-[11px] sm:text-xs text-gray-500 mt-1">
-                        Pay in cash or UPI QR scan at your doorstep upon delivery (+₹49 handling fee).
+                        Pay in cash or UPI QR scan at your doorstep upon delivery. Zero extra fee.
                       </p>
                     </div>
                   </div>
-                  <span className="text-xs font-bold text-gray-700 shrink-0 ml-2">
-                    +₹49
+                  <span className="text-[11px] font-bold text-[#038a41] bg-[#e6f4ea] px-2 py-0.5 rounded-[3px] shrink-0 ml-2">
+                    Free COD
                   </span>
                 </label>
 
@@ -647,12 +661,6 @@ export default function CheckoutPage() {
                 {shippingFee === 0 ? "FREE" : formatPrice(shippingFee)}
               </span>
             </div>
-            {paymentMethod === "cod" && (
-              <div className="flex justify-between text-gray-600">
-                <span>COD Handling Fee</span>
-                <span className="font-bold text-gray-900">₹49</span>
-              </div>
-            )}
             <div className="flex justify-between text-sm font-extrabold text-gray-900 pt-3 border-t border-gray-200">
               <span>Grand Total</span>
               <span className="text-xl font-black text-[#3a1233] font-sans">

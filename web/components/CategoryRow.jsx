@@ -45,22 +45,22 @@ export default function CategoryRow() {
           </Link>
         </div>
 
-        {/* Categories Row */}
-        <div className="flex gap-4 sm:gap-6 lg:gap-8 overflow-x-auto no-scrollbar snap-x snap-mandatory py-2 justify-start lg:justify-between items-start">
+        {/* Categories 2-Column Grid on Mobile/Tab & 6-Column Grid on Desktop */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 lg:gap-6 items-start">
           {categories.map((cat) => (
             <Link
               key={cat.slug}
               href={`/shop?category=${cat.slug}`}
-              className="flex-shrink-0 w-24 sm:w-28 lg:w-36 snap-start group text-center flex flex-col items-center cursor-pointer"
+              className="w-full group text-center flex flex-col items-center cursor-pointer"
             >
               {/* Arched Pastel Dome Frame */}
-              <div className="relative w-full aspect-[4/5] rounded-t-[999px] rounded-b-[16px] bg-[#f7eaf2] overflow-hidden transition-all duration-300 group-hover:scale-105 group-hover:shadow-md">
+              <div className="relative w-full aspect-[4/5] rounded-t-[999px] rounded-b-[16px] bg-[#f7eaf2] overflow-hidden transition-all duration-300 group-hover:scale-105 group-hover:shadow-md border border-pink-100/50">
                 {cat.image ? (
                   <Image
                     src={cat.image}
                     alt={cat.name}
                     fill
-                    sizes="(max-width: 639px) 96px, (max-width: 1023px) 112px, 144px"
+                    sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, 160px"
                     className="object-cover object-top transition-transform duration-300 group-hover:scale-110"
                   />
                 ) : (
@@ -71,7 +71,7 @@ export default function CategoryRow() {
               </div>
 
               {/* Clean Centered Category Label */}
-              <span className="mt-3 text-sm sm:text-base font-bold text-gray-900 group-hover:text-plum transition-colors line-clamp-1">
+              <span className="mt-2.5 text-xs sm:text-sm lg:text-base font-bold text-gray-900 group-hover:text-plum transition-colors line-clamp-1">
                 {cat.name}
               </span>
             </Link>

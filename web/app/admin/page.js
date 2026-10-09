@@ -27,6 +27,8 @@ import {
   List,
   ArrowUDownLeft,
   ArrowsClockwise,
+  Gear,
+  Truck,
 } from "@phosphor-icons/react";
 import ImageUploadInput from "@/components/ImageUploadInput";
 import {
@@ -183,6 +185,7 @@ export default function AdminPage() {
     announcement_bar: { text: "", enabled: true },
     promo_banner: { title: "", subtitle: "", image_url: "", button_text: "", button_link: "" },
     store_info: { phone: "", whatsapp: "", email: "", address: "" },
+    delivery_settings: { standardFee: 79, freeThreshold: 999, estimateDays: "3-5 Business Days" },
   });
 
   // Product Modal State
@@ -875,6 +878,17 @@ export default function AdminPage() {
             >
               <Sliders size={20} className="shrink-0" />
               {sidebarOpen && <span>Homepage CMS</span>}
+            </button>
+
+            <button
+              onClick={() => setActiveTab("settings")}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                activeTab === "settings" ? "bg-plum text-white shadow-xs" : "text-gray-600 hover:bg-gray-100"
+              }`}
+              title="Delivery Settings"
+            >
+              <Gear size={20} className="shrink-0" />
+              {sidebarOpen && <span>Delivery Settings</span>}
             </button>
           </nav>
         </div>
@@ -1894,6 +1908,133 @@ export default function AdminPage() {
               >
                 Save Contact Info
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 6: DELIVERY & LOGISTICS SETTINGS */}
+        {activeTab === "settings" && (
+          <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+              <div>
+                <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                  <Truck size={22} className="text-plum" />
+                  <span>Delivery Charge & Logistics Settings</span>
+                </h2>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Configure delivery rates, free shipping threshold, and estimate notes. These settings dynamically update the storefront cart & checkout pages.
+                </p>
+              </div>
+              {cmsSaveStatus && (
+                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full animate-fade-in">
+                  {cmsSaveStatus}
+                </span>
+              )}
+            </div>
+
+            <div className="space-y-5 max-w-2xl text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-800 mb-1">
+                    Standard Shipping Delivery Charge (₹)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-gray-500 font-bold">₹</span>
+                    <input
+                      type="number"
+                      required
+                      min="0"
+                      value={cms.delivery_settings?.standardFee ?? 79}
+                      onChange={(e) =>
+                        setCms({
+                          ...cms,
+                          delivery_settings: {
+                            ...(cms.delivery_settings || {}),
+                            standardFee: parseFloat(e.target.value) || 0,
+                          },
+                        })
+                      }
+                      className="w-full h-10 pl-7 pr-3 border border-gray-300 rounded-lg text-sm font-bold text-gray-900 focus:outline-none focus:border-plum"
+                      placeholder="79"
+                    />
+                  </div>
+                  <p className="text-[11px] text-gray-400 mt-1">
+                    Charged on cart total below the free threshold.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-800 mb-1">
+                    Free Delivery Threshold (₹)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-gray-500 font-bold">₹</span>
+                    <input
+                      type="number"
+                      required
+                      min="0"
+                      value={cms.delivery_settings?.freeThreshold ?? 999}
+                      onChange={(e) =>
+                        setCms({
+                          ...cms,
+                          delivery_settings: {
+                            ...(cms.delivery_settings || {}),
+                            freeThreshold: parseFloat(e.target.value) || 0,
+                          },
+                        })
+                      }
+                      className="w-full h-10 pl-7 pr-3 border border-gray-300 rounded-lg text-sm font-bold text-gray-900 focus:outline-none focus:border-plum"
+                      placeholder="999"
+                    />
+                  </div>
+                  <p className="text-[11px] text-gray-400 mt-1">
+                    Orders at or above this amount qualify for ₹0 Free Shipping.
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-800 mb-1">
+                  Delivery Estimate Note
+                </label>
+                <input
+                  type="text"
+                  value={cms.delivery_settings?.estimateDays || "3-5 Business Days"}
+                  onChange={(e) =>
+                    setCms({
+                      ...cms,
+                      delivery_settings: {
+                        ...(cms.delivery_settings || {}),
+                        estimateDays: e.target.value,
+                      },
+                    })
+                  }
+                  className="w-full h-10 px-3 border border-gray-300 rounded-lg font-medium text-gray-900 focus:outline-none focus:border-plum"
+                  placeholder="e.g. 3-5 Business Days"
+                />
+                <p className="text-[11px] text-gray-400 mt-1">
+                  Shown during checkout under delivery details.
+                </p>
+              </div>
+
+              <div className="p-4 bg-purple-50 rounded-xl border border-purple-200 space-y-1 text-purple-900">
+                <div className="font-bold">⚡ Live Dynamic Preview:</div>
+                <div>Standard Fee: <strong className="text-plum">₹{cms.delivery_settings?.standardFee ?? 79}</strong></div>
+                <div>Free Delivery Minimum Order: <strong className="text-emerald-700">₹{cms.delivery_settings?.freeThreshold ?? 999}</strong></div>
+                <div>Cash on Delivery Fee: <strong className="text-emerald-700">₹0 (FREE COD)</strong></div>
+                <div>Estimated Delivery Timeline: <strong>{cms.delivery_settings?.estimateDays || "3-5 Business Days"}</strong></div>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => handleSaveCms("delivery_settings", cms.delivery_settings)}
+                  className="px-6 py-2.5 bg-plum text-white font-bold rounded-lg hover:bg-plum-900 transition-colors shadow-md cursor-pointer text-xs flex items-center gap-2"
+                >
+                  <Truck size={18} />
+                  <span>Save Delivery Settings to Database</span>
+                </button>
+              </div>
             </div>
           </div>
         )}

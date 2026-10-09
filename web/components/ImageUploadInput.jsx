@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { UploadSimple, CheckCircle, Spinner, Image as ImageIcon } from "@phosphor-icons/react";
-import { adminUploadImage } from "@/lib/api";
+import { adminUploadImage, getResolvedImageUrl } from "@/lib/api";
 
 export default function ImageUploadInput({ label = "Image", value = "", onChange, recommendedSize = "" }) {
   const [uploading, setUploading] = useState(false);
@@ -105,7 +105,7 @@ export default function ImageUploadInput({ label = "Image", value = "", onChange
         {value && (
           <div className="flex items-center gap-3 p-2 bg-gray-50 border border-gray-200 rounded-lg">
             <img
-              src={value}
+              src={getResolvedImageUrl(value)}
               alt="Preview"
               className="w-12 h-12 object-cover rounded bg-white border border-gray-200 shrink-0"
               onError={(e) => {

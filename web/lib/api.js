@@ -184,7 +184,33 @@ export async function adminDeleteCategory(id) {
   });
 }
 
-// 6. Cloudflare R2 Image Upload API
+// Helper to normalize and resolve image URLs (handles string arrays, object arrays, local /uploads/ paths)
+export function normalizeImageUrl(img) {
+  if (!img) return "/logo.png";
+  let rawUrl = "";
+  if (typeof img === "string") {
+    rawUrl = img;
+  } else if (typeof img === "object" && img.url) {
+    rawUrl = img.url;
+  } else {
+    return "/logo.png";
+  }
+
+  if (!rawUrl || typeof rawUrl !== "string") return "/logo.png";
+  const trimmed = rawUrl.trim();
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("data:")) {
+    return trimmed;
+  }
+  if (trimmed.startsWith("/uploads/")) {
+    const backendOrigin = API_BASE.replace(/\/api\/?$/, "");
+    return `${backendOrigin}${trimmed}`;
+  }
+  return trimmed || "/logo.png";
+}
+
+export const getResolvedImageUrl = normalizeImageUrl;
+
+// 6. Cloudflare R2 / Local Image Upload API
 export async function adminUploadImage(file) {
   const formData = new FormData();
   formData.append("image", file);
@@ -205,7 +231,12 @@ export async function adminUploadImage(file) {
       body: formData,
       credentials: "include",
     });
-    return await res.json();
+    const data = await res.json();
+    if (data?.success && data?.url && data.url.startsWith("/uploads/")) {
+      const backendOrigin = API_BASE.replace(/\/api\/?$/, "");
+      data.url = `${backendOrigin}${data.url}`;
+    }
+    return data;
   } catch (err) {
     console.error("Image upload failed:", err);
     return { success: false, message: err.message };

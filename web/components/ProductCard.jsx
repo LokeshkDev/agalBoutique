@@ -7,6 +7,8 @@ import { Heart, Star, Eye } from "@phosphor-icons/react";
 import { formatPrice, discountPercent, getColorHex } from "@/lib/format";
 import QuickViewModal from "@/components/QuickViewModal";
 
+import { normalizeImageUrl } from "@/lib/api";
+
 /**
  * Meesho / Myntra style Product Card:
  * - 5px rounded corners on image, NO borders.
@@ -29,7 +31,7 @@ export default function ProductCard({ product, priority = false }) {
     colors = [],
   } = product;
 
-  const mainImage = images?.[0]?.url || "/logo.png";
+  const mainImage = normalizeImageUrl(images?.[0]);
   const discount = discountPercent(price, mrp);
 
   return (
@@ -59,26 +61,8 @@ export default function ProductCard({ product, priority = false }) {
             </span>
           ) : null}
 
-          {/* Action Buttons Top-Right (Wishlist + Quick View) */}
+          {/* Action Buttons Top-Right (Quick View) */}
           <div className="absolute top-2 right-2 flex flex-col gap-1.5 z-10">
-            {/* Wishlist Heart */}
-            <button
-              type="button"
-              aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setWishlisted(!wishlisted);
-              }}
-              className="w-8 h-8 rounded-full bg-white/90 shadow-sm flex items-center justify-center text-gray-700 hover:text-crimson active:scale-90 transition-transform cursor-pointer"
-            >
-              <Heart
-                size={18}
-                weight={wishlisted ? "fill" : "regular"}
-                className={wishlisted ? "text-crimson" : "text-gray-700"}
-              />
-            </button>
-
             {/* Quick View Eye Icon */}
             <button
               type="button"
@@ -141,15 +125,12 @@ export default function ProductCard({ product, priority = false }) {
             )}
           </div>
 
-          {/* Micro Delivery Tag */}
-          <div className="flex items-center justify-between pt-0.5">
-            <span className="inline-block text-xs font-bold text-[#038a41] bg-[#e6f4ea] px-2 py-0.5 rounded-[3px]">
-              Free Delivery
-            </span>
-            <span className="text-xs text-gray-500 font-medium">
+          {/* Fabric Details */}
+          {product.fabric && (
+            <div className="pt-0.5 text-xs text-gray-500 font-medium truncate">
               {product.fabric}
-            </span>
-          </div>
+            </div>
+          )}
         </div>
       </article>
 

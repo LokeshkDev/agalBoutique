@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { normalizeImageUrl, getCmsSettings } from "@/lib/api";
+
+import { useState, useEffect } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useCart } from "@/store/cart";
 import Sheet from "@/components/Sheet";
@@ -27,6 +29,15 @@ export default function CartSheet() {
   const [showCoupon, setShowCoupon] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [couponApplied, setCouponApplied] = useState(false);
+  const [freeThreshold, setFreeThreshold] = useState(999);
+
+  useEffect(() => {
+    getCmsSettings().then((res) => {
+      if (res?.settings?.delivery_settings?.freeThreshold !== undefined) {
+        setFreeThreshold(Number(res.settings.delivery_settings.freeThreshold));
+      }
+    });
+  }, []);
 
   const totalQuantity = items.reduce(
     (acc, i) => acc + (i.qty || i.quantity || 1),
@@ -43,11 +54,10 @@ export default function CartSheet() {
   );
   const savings = mrpTotal - subtotal;
 
-  const FREE_DELIVERY_THRESHOLD = 999;
-  const amountToFreeDelivery = Math.max(0, FREE_DELIVERY_THRESHOLD - subtotal);
+  const amountToFreeDelivery = Math.max(0, freeThreshold - subtotal);
   const progressPercent = Math.min(
     100,
-    (subtotal / FREE_DELIVERY_THRESHOLD) * 100
+    (subtotal / freeThreshold) * 100
   );
 
   return (
@@ -97,11 +107,7 @@ export default function CartSheet() {
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {items.map((item) => {
               const currentQty = item.qty || item.quantity || 1;
-              const imageUrl =
-                item.images?.[0]?.url ||
-                item.image ||
-                item.images?.[0] ||
-                "/logo.png";
+              const imageUrl = normalizeImageUrl(item.image || item.images?.[0]);
 
               return (
                 <div

@@ -4,7 +4,7 @@ import { optimizeAndUploadImage } from "../services/r2UploadService.js";
 // Multer memory storage (buffer held in memory for Sharp processing)
 const storage = multer.memoryStorage();
 
-export const uploadMiddleware = multer({
+const rawUpload = multer({
   storage,
   limits: { fileSize: 15 * 1024 * 1024 }, // 15MB limit
   fileFilter: (req, file, cb) => {
@@ -15,6 +15,16 @@ export const uploadMiddleware = multer({
     }
   },
 }).single("image");
+
+export function uploadMiddleware(req, res, next) {
+  rawUpload(req, res, (err) => {
+    if (err) {
+      console.error("Multer upload error:", err);
+      return res.status(400).json({ success: false, message: err.message || "Invalid image upload" });
+    }
+    next();
+  });
+}
 
 // POST /api/admin/upload
 export async function uploadImage(req, res) {
@@ -35,8 +45,17 @@ export async function uploadImage(req, res) {
       storage: result.storage,
     });
   } catch (err) {
-    console.error("Error in uploadImage controller:", err);
-    res.status(500).json({ success: false, message: err.message || "Failed to process and upload image" });
+    const isClientError = err.message?.includes("unsupported image format") || err.message?.includes("Input buffer");
+    if (!isClientError) {
+      console.error("Error in uploadImage controller:", err);
+    }
+    const statusCode = isClientError ? 400 : 500;
+    res.status(statusCode).json({
+      success: false,
+      message: isClientError
+        ? "The uploaded file is not a valid or supported image format (JPEG, PNG, WebP, GIF)."
+        : (err.message || "Failed to process and upload image"),
+    });
   }
 }
 

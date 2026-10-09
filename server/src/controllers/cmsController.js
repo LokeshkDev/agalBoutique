@@ -109,6 +109,11 @@ const defaultCmsSettings = {
     map_url: "https://maps.google.com/maps?q=T.+Nagar,+Chennai&t=&z=13&ie=UTF8&iwloc=&output=embed",
     banner_image: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1200&q=80",
   },
+  delivery_settings: {
+    standardFee: 79,
+    freeThreshold: 999,
+    estimateDays: "3-5 Business Days",
+  },
 };
 
 // Auto-create cms_settings table if needed
