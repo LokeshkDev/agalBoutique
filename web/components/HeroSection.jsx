@@ -1,7 +1,21 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Button from "@/components/Button";
+import { getCmsSettings } from "@/lib/api";
 
 export default function HeroSection() {
+  const [freeThreshold, setFreeThreshold] = useState(999);
+
+  useEffect(() => {
+    getCmsSettings().then((res) => {
+      if (res?.settings?.delivery_settings?.freeThreshold !== undefined) {
+        setFreeThreshold(Number(res.settings.delivery_settings.freeThreshold));
+      }
+    });
+  }, []);
+
   return (
     <section aria-labelledby="hero-heading" className="relative py-8 lg:py-16 bg-white overflow-hidden">
       <div className="max-w-[var(--container)] mx-auto px-4 lg:px-8">
@@ -43,7 +57,7 @@ export default function HeroSection() {
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="w-4 h-4 rounded-full bg-[#e6f4ea] text-[#238b45] font-bold text-[10px] grid place-items-center">✓</span>
-                Free Delivery Above ₹999
+                Free Delivery Above ₹{freeThreshold}
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="w-4 h-4 rounded-full bg-[#e6f4ea] text-[#238b45] font-bold text-[10px] grid place-items-center">✓</span>

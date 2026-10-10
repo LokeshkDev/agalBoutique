@@ -69,6 +69,8 @@ export const metadata = {
   },
 };
 
+import PageLoader from "@/components/PageLoader";
+
 export default function RootLayout({ children }) {
   const storeSchema = {
     "@context": "https://schema.org",
@@ -93,6 +95,7 @@ export default function RootLayout({ children }) {
       className={`${roboto.variable} ${roboto.className} ${notoTamil.variable}`}
     >
       <body className={`${roboto.className} min-h-screen flex flex-col bg-white text-ink antialiased pb-[64px] lg:pb-0 font-sans`}>
+        <PageLoader />
         <JsonLd data={storeSchema} />
         <Header />
         <main className="flex-1">{children}</main>

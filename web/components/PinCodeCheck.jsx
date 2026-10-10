@@ -1,12 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Truck, CheckCircle } from "@phosphor-icons/react";
+import { getCmsSettings } from "@/lib/api";
 
 export default function PinCodeCheck() {
   const [pin, setPin] = useState("");
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
+  const [cmsEstimate, setCmsEstimate] = useState(null);
+
+  useEffect(() => {
+    getCmsSettings().then((res) => {
+      if (res?.settings?.delivery_settings?.estimateDays) {
+        setCmsEstimate(res.settings.delivery_settings.estimateDays);
+      }
+    });
+  }, []);
 
   const handleCheck = (e) => {
     e.preventDefault();
@@ -18,29 +28,22 @@ export default function PinCodeCheck() {
       return;
     }
 
-    // Realistic delivery estimate based on PIN prefix
+    // Realistic delivery estimate based on PIN prefix or CMS setting
     const isTN = pin.startsWith("60") || pin.startsWith("61") || pin.startsWith("62") || pin.startsWith("63") || pin.startsWith("64");
     const isMetro = ["11", "40", "56", "50", "70"].some((prefix) => pin.startsWith(prefix));
 
-    if (isTN) {
-      setResult({
-        days: "2–3 business days",
-        location: "Tamil Nadu",
-        cod: true,
-      });
-    } else if (isMetro) {
-      setResult({
-        days: "3–4 business days",
-        location: "Metro Cities",
-        cod: true,
-      });
-    } else {
-      setResult({
-        days: "5–7 business days",
-        location: "Rest of India",
-        cod: true,
-      });
+    let daysText = cmsEstimate || "3–5 business days";
+    if (!cmsEstimate) {
+      if (isTN) daysText = "2–3 business days";
+      else if (isMetro) daysText = "3–4 business days";
+      else daysText = "5–7 business days";
     }
+
+    setResult({
+      days: daysText,
+      location: isTN ? "Tamil Nadu" : isMetro ? "Metro Cities" : "Rest of India",
+      cod: true,
+    });
   };
 
   return (

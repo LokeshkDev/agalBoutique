@@ -114,6 +114,17 @@ const defaultCmsSettings = {
     freeThreshold: 999,
     estimateDays: "3-5 Business Days",
   },
+  header_nav_menu: [
+    { title: "Popular", url: "/shop" },
+    { title: "Sarees & Handlooms", url: "/shop?category=sarees" },
+    { title: "Kurtis & Tunics", url: "/shop?category=kurtis" },
+    { title: "Full Sets & Anarkalis", url: "/shop?category=full-sets" },
+    { title: "Blouses & Stitching", url: "/shop?category=blouses" },
+    { title: "Lehenga Sets", url: "/shop?category=lehengas" },
+    { title: "Kidswear & Pattu Pavadai", url: "/shop?category=kidswear" },
+    { title: "About Us", url: "/about" },
+    { title: "Contact Us", url: "/contact" },
+  ],
 };
 
 // Auto-create cms_settings table if needed

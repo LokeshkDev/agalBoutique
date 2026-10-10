@@ -31,6 +31,7 @@ export default function CheckoutPage() {
   const [step, setStep] = useState(1);
   const [orderComplete, setOrderComplete] = useState(false);
   const [orderNumber, setOrderNumber] = useState("");
+  const [completedOrder, setCompletedOrder] = useState(null);
   const [summaryOpenMobile, setSummaryOpenMobile] = useState(false);
 
   // Address & Contact form state
@@ -89,29 +90,43 @@ export default function CheckoutPage() {
   };
 
   const handlePlaceOrder = async () => {
+    const orderItems = items.map((i) => ({
+      id: i.id,
+      name: i.name,
+      slug: i.slug,
+      price: i.price,
+      mrp: i.mrp,
+      size: i.size || "Free Size",
+      color: i.color || "",
+      qty: i.qty || i.quantity || 1,
+      image: i.image || i.images?.[0]?.url || "/logo.png",
+      customStitching: i.customStitching || null,
+    }));
+
     const payload = {
-      items: items.map((i) => ({
-        id: i.id,
-        name: i.name,
-        slug: i.slug,
-        price: i.price,
-        mrp: i.mrp,
-        size: i.size,
-        color: i.color,
-        qty: i.qty || i.quantity || 1,
-        image: i.image || i.images?.[0]?.url,
-        customStitching: i.customStitching || null,
-      })),
+      items: orderItems,
       shippingAddress: address,
       paymentMethod,
     };
 
     const backendRes = await submitOrderToBackend(payload);
+    const serverOrder = backendRes?.order;
     const finalOrderNum =
       backendRes?.orderNumber ||
-      backendRes?.order?.orderNumber ||
+      serverOrder?.orderNumber ||
       "AGAL-" + Math.floor(100000 + Math.random() * 900000);
 
+    const calculatedTotal = serverOrder?.totalAmount || serverOrder?.total_amount || total;
+
+    setCompletedOrder({
+      orderNumber: finalOrderNum,
+      items: orderItems,
+      totalAmount: calculatedTotal,
+      subtotal,
+      shippingFee,
+      address: { ...address },
+      paymentMethod,
+    });
     setOrderNumber(finalOrderNum);
     setOrderComplete(true);
     clear();
@@ -156,6 +171,10 @@ export default function CheckoutPage() {
   };
 
   if (orderComplete) {
+    const displayAddr = completedOrder?.address || address;
+    const displayItems = completedOrder?.items || [];
+    const displayTotal = completedOrder?.totalAmount || total;
+
     return (
       <div className="max-w-xl mx-auto px-4 py-12 sm:py-16 text-center font-sans">
         <div className="w-20 h-20 rounded-full bg-green-50 text-[#238b45] grid place-items-center mx-auto mb-5 shadow-xs">
@@ -166,7 +185,7 @@ export default function CheckoutPage() {
           Order Placed Successfully!
         </h1>
         <p className="text-xs sm:text-sm text-gray-600 mb-6 max-w-md mx-auto">
-          Thank you, <strong className="text-gray-900">{address.name}</strong>! Your order has been registered and is being handcrafted for dispatch.
+          Thank you, <strong className="text-gray-900">{displayAddr.name}</strong>! Your order has been registered and is being handcrafted for dispatch.
         </p>
 
         <div className="p-5 rounded-[5px] bg-[#fcfafc] border border-[#f3e3ee] text-left text-xs space-y-3 mb-6 shadow-xs">
@@ -176,34 +195,60 @@ export default function CheckoutPage() {
               {orderNumber}
             </span>
           </div>
+
+          {/* Ordered Products Items List */}
+          <div className="py-2 border-b border-gray-200 space-y-2">
+            <span className="text-gray-500 font-semibold block text-[11px] uppercase tracking-wider">
+              Ordered Items ({displayItems.length}):
+            </span>
+            {displayItems.map((item, idx) => (
+              <div key={idx} className="flex items-center justify-between gap-3 text-xs bg-white p-2.5 rounded border border-gray-200">
+                <div className="flex items-center gap-2.5">
+                  <img src={item.image || "/logo.png"} alt={item.name} className="w-9 h-11 object-cover rounded bg-gray-50 shrink-0 border border-gray-200" />
+                  <div>
+                    <div className="font-bold text-gray-900 line-clamp-1">{item.name}</div>
+                    <div className="text-[11px] text-gray-500 font-medium">
+                      Size: <span className="font-semibold text-gray-800">{item.size || "Free Size"}</span>
+                      {item.color ? <span className="ml-1.5">• Color: <span className="font-semibold text-gray-800">{item.color}</span></span> : null}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className="font-extrabold text-gray-900">{formatPrice(item.price * item.qty)}</div>
+                  <div className="text-[10px] text-gray-400">Qty: {item.qty}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
           <div className="flex justify-between items-center">
             <span className="text-gray-500 font-medium">Recipient Name:</span>
-            <span className="font-bold text-gray-900">{address.name}</span>
+            <span className="font-bold text-gray-900">{displayAddr.name}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-gray-500 font-medium">Phone Number:</span>
-            <span className="font-bold text-gray-900">+91 {address.phone}</span>
+            <span className="font-bold text-gray-900">+91 {displayAddr.phone}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-gray-500 font-medium">Email ID:</span>
-            <span className="font-bold text-gray-900">{address.email}</span>
+            <span className="font-bold text-gray-900">{displayAddr.email}</span>
           </div>
           <div className="flex justify-between items-start">
             <span className="text-gray-500 font-medium">Delivery Address:</span>
             <span className="font-bold text-gray-900 text-right max-w-[240px]">
-              {address.line1}, {address.city}, {address.state} - {address.pin} ({address.tag})
+              {displayAddr.line1}, {displayAddr.city}, {displayAddr.state} - {displayAddr.pin} ({displayAddr.tag})
             </span>
           </div>
           <div className="flex justify-between items-center pt-2 border-t border-gray-200">
             <span className="text-gray-500 font-medium">Payment Method:</span>
             <span className="font-bold text-gray-900 uppercase">
-              {paymentMethod === "online" ? "Online Payment (Paid)" : "Cash on Delivery (Pay on Arrival)"}
+              {(completedOrder?.paymentMethod || paymentMethod) === "online" ? "Online Payment (Paid)" : "Cash on Delivery (Pay on Arrival)"}
             </span>
           </div>
-          <div className="flex justify-between items-center">
-            <span className="text-gray-500 font-medium">Total Amount:</span>
-            <span className="font-extrabold text-base text-[#3a1233]">
-              {formatPrice(total)}
+          <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+            <span className="text-gray-700 font-bold text-sm">Total Amount:</span>
+            <span className="font-extrabold text-lg text-[#3a1233]">
+              {formatPrice(displayTotal)}
             </span>
           </div>
         </div>

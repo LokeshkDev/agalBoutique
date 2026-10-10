@@ -4,9 +4,28 @@ import { seedProducts } from "../seed/seedData.js";
 // Memory storage for dev mode when DB is not connected
 const inMemoryOrders = [];
 
+let schemaEnsured = false;
+export async function ensureOrderSchema() {
+  if (schemaEnsured || !pool || !isConnected) return;
+  try {
+    await pool.query(`
+      ALTER TABLE orders 
+      MODIFY COLUMN order_status VARCHAR(50) NOT NULL DEFAULT 'confirmed',
+      MODIFY COLUMN payment_status VARCHAR(50) NOT NULL DEFAULT 'pending'
+    `);
+  } catch (err) {}
+  try {
+    await pool.query(`
+      ALTER TABLE orders ADD COLUMN return_history JSON DEFAULT NULL
+    `);
+  } catch (err) {}
+  schemaEnsured = true;
+}
+
 // POST /api/orders
 export async function createOrder(req, res) {
   try {
+    await ensureOrderSchema();
     const { items, shippingAddress, paymentMethod = "online" } = req.body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -78,8 +97,27 @@ export async function createOrder(req, res) {
       });
     }
 
-    const shippingFee = calculatedSubtotal >= 999 ? 0 : 79;
-    const codFee = paymentMethod === "cod" ? 49 : 0;
+    // Fetch dynamic delivery settings from cms_settings
+    let standardFee = 79;
+    let freeThreshold = 999;
+
+    if (pool && isConnected) {
+      try {
+        const [dRows] = await pool.query("SELECT setting_value FROM cms_settings WHERE setting_key = 'delivery_settings' LIMIT 1");
+        if (dRows.length > 0) {
+          const dVal = typeof dRows[0].setting_value === "string" ? JSON.parse(dRows[0].setting_value) : dRows[0].setting_value;
+          if (dVal) {
+            standardFee = parseFloat(dVal.standardFee ?? 79);
+            freeThreshold = parseFloat(dVal.freeThreshold ?? 999);
+          }
+        }
+      } catch (dErr) {
+        console.error("Warning reading delivery_settings in createOrder:", dErr.message);
+      }
+    }
+
+    const shippingFee = calculatedSubtotal >= freeThreshold ? 0 : standardFee;
+    const codFee = 0; // Free COD per requirements
     const grandTotal = calculatedSubtotal + shippingFee + codFee;
 
     const orderNumber = `AGAL-${Math.floor(100000 + Math.random() * 900000)}`;
@@ -95,11 +133,93 @@ export async function createOrder(req, res) {
       codFee,
       totalAmount: grandTotal,
       paymentMethod,
-      paymentStatus: paymentMethod === "cod" ? "pending" : "pending",
+      paymentStatus: "pending",
       orderStatus: "confirmed",
       items: processedItems,
       createdAt: new Date().toISOString(),
     };
+
+    // Deduct stock for each ordered item
+    for (const pItem of processedItems) {
+      const qtyToDeduct = parseInt(pItem.qty || 1, 10);
+      const prodId = pItem.id;
+      const szLabel = pItem.size;
+      const colName = pItem.color;
+
+      if (pool && isConnected && prodId) {
+        try {
+          const pSql = "SELECT id, sizes FROM products WHERE id = ? OR slug = ? LIMIT 1";
+          const pParams = [String(prodId), pItem.slug || String(prodId)];
+
+          const [pRows] = await pool.query(pSql, pParams);
+          if (pRows.length > 0) {
+            const p = pRows[0];
+            let rawSizes = p.sizes;
+            if (typeof rawSizes === "string") {
+              try { rawSizes = JSON.parse(rawSizes); } catch (e) { rawSizes = []; }
+            }
+            if (!Array.isArray(rawSizes)) rawSizes = [];
+
+            // Standardize rawSizes into array of size objects
+            let sizesArr = rawSizes.map((s) => {
+              if (typeof s === "string") {
+                return { label: s, stock: 10 };
+              }
+              if (s && typeof s === "object") {
+                return {
+                  label: s.label || s.size || "Free Size",
+                  stock: s.stock !== undefined && s.stock !== null ? parseInt(s.stock, 10) : 10,
+                  color: s.color || "",
+                };
+              }
+              return { label: "Free Size", stock: 10 };
+            });
+
+            if (sizesArr.length === 0) {
+              sizesArr = [{ label: szLabel || "Free Size", stock: 10 }];
+            }
+
+            const targetSzNorm = String(szLabel || "").trim().toLowerCase();
+            const targetColNorm = String(colName || "").trim().toLowerCase();
+
+            let matchedIdx = sizesArr.findIndex((s) => {
+              const sLabelNorm = String(s.label || "").trim().toLowerCase();
+              const sColNorm = String(s.color || "").trim().toLowerCase();
+              return (sLabelNorm === targetSzNorm) && (!targetColNorm || !sColNorm || sColNorm === targetColNorm);
+            });
+
+            if (matchedIdx === -1) {
+              matchedIdx = sizesArr.findIndex((s) => String(s.label || "").trim().toLowerCase() === targetSzNorm);
+            }
+
+            if (matchedIdx === -1 && sizesArr.length > 0) {
+              matchedIdx = 0;
+            }
+
+            if (matchedIdx !== -1) {
+              const currentStock = parseInt(sizesArr[matchedIdx].stock ?? 10, 10);
+              sizesArr[matchedIdx].stock = Math.max(0, currentStock - qtyToDeduct);
+              await pool.query("UPDATE products SET sizes = ? WHERE id = ?", [JSON.stringify(sizesArr), p.id]);
+            }
+          }
+        } catch (stockErr) {
+          console.error("Warning: Failed to deduct stock in createOrder:", stockErr.message);
+        }
+      }
+
+      // Also update in-memory seedProducts if present
+      const memProd = seedProducts.find((p) => String(p.id) === String(prodId) || p.slug === pItem.slug);
+      if (memProd) {
+        let memSizes = Array.isArray(memProd.sizes) ? memProd.sizes : [];
+        const targetSzNorm = String(szLabel || "").trim().toLowerCase();
+        let mIdx = memSizes.findIndex((s) => s && typeof s === "object" && String(s.label || "").trim().toLowerCase() === targetSzNorm);
+        if (mIdx === -1 && memSizes.length > 0) mIdx = 0;
+        if (mIdx !== -1 && memSizes[mIdx]) {
+          const cStock = parseInt(memSizes[mIdx].stock ?? 10, 10);
+          memSizes[mIdx].stock = Math.max(0, cStock - qtyToDeduct);
+        }
+      }
+    }
 
     if (!pool || !isConnected) {
       inMemoryOrders.unshift(orderData);
@@ -125,7 +245,7 @@ export async function createOrder(req, res) {
         codFee,
         grandTotal,
         paymentMethod,
-        paymentMethod === "cod" ? "pending" : "pending",
+        "pending",
         "confirmed",
         JSON.stringify(processedItems),
       ]
@@ -184,6 +304,13 @@ export async function getOrder(req, res) {
     const cPhone = r.customer_phone || addr.phone || addr.customerPhone || "";
     const cEmail = r.customer_email || addr.email || addr.customerEmail || "";
 
+    let retHist = [];
+    try {
+      retHist = typeof r.return_history === "string" ? JSON.parse(r.return_history) : (r.return_history || []);
+    } catch (e) {
+      retHist = [];
+    }
+
     const order = {
       id: r.id,
       orderNumber: r.order_number,
@@ -208,6 +335,7 @@ export async function getOrder(req, res) {
       paymentStatus: r.payment_status || "pending",
       orderStatus: r.order_status || "confirmed",
       items: Array.isArray(items) ? items : [],
+      returnHistory: Array.isArray(retHist) ? retHist : [],
       createdAt: r.created_at || new Date().toISOString(),
     };
 
@@ -245,6 +373,13 @@ export async function getAllOrders(req, res) {
       const cPhone = r.customer_phone || addr.phone || addr.customerPhone || "";
       const cEmail = r.customer_email || addr.email || addr.customerEmail || "";
 
+      let retHist = [];
+      try {
+        retHist = typeof r.return_history === "string" ? JSON.parse(r.return_history) : (r.return_history || []);
+      } catch (e) {
+        retHist = [];
+      }
+
       return {
         id: r.id,
         orderNumber: r.order_number,
@@ -269,6 +404,7 @@ export async function getAllOrders(req, res) {
         paymentStatus: r.payment_status || "pending",
         orderStatus: r.order_status || "confirmed",
         items: Array.isArray(items) ? items : [],
+        returnHistory: Array.isArray(retHist) ? retHist : [],
         createdAt: r.created_at || new Date().toISOString(),
       };
     });
@@ -285,6 +421,7 @@ export async function updateOrderStatus(req, res) {
   try {
     const { id } = req.params;
     const { orderStatus, paymentStatus } = req.body;
+    const isNum = typeof id === "number" || (/^\d+$/).test(String(id).trim());
 
     if (!pool || !isConnected) {
       const order = inMemoryOrders.find((o) => o.orderNumber === id || String(o.id) === String(id));
@@ -295,18 +432,19 @@ export async function updateOrderStatus(req, res) {
       return res.json({ success: true, message: "Order status updated (in-memory)" });
     }
 
-    await pool.query(
-      `UPDATE orders SET
-        order_status = COALESCE(?, order_status),
-        payment_status = COALESCE(?, payment_status)
-       WHERE id = ? OR order_number = ?`,
-      [orderStatus || null, paymentStatus || null, id, id]
-    );
+    const sql = isNum
+      ? `UPDATE orders SET order_status = COALESCE(?, order_status), payment_status = COALESCE(?, payment_status) WHERE id = ? OR order_number = ?`
+      : `UPDATE orders SET order_status = COALESCE(?, order_status), payment_status = COALESCE(?, payment_status) WHERE order_number = ?`;
+    const params = isNum
+      ? [orderStatus || null, paymentStatus || null, parseInt(id, 10), String(id)]
+      : [orderStatus || null, paymentStatus || null, String(id)];
+
+    await pool.query(sql, params);
 
     res.json({ success: true, message: "Order status updated successfully" });
   } catch (err) {
     console.error("Error in updateOrderStatus:", err);
-    res.status(500).json({ success: false, message: "Failed to update order status" });
+    res.status(500).json({ success: false, message: `Failed to update order status: ${err.message}` });
   }
 }
 
@@ -314,6 +452,7 @@ export async function updateOrderStatus(req, res) {
 export async function deleteOrder(req, res) {
   try {
     const { id } = req.params;
+    const isNum = typeof id === "number" || (/^\d+$/).test(String(id).trim());
 
     if (!pool || !isConnected) {
       const idx = inMemoryOrders.findIndex((o) => o.orderNumber === id || String(o.id) === String(id));
@@ -321,29 +460,42 @@ export async function deleteOrder(req, res) {
       return res.json({ success: true, message: "Order deleted (in-memory)" });
     }
 
-    await pool.query("DELETE FROM orders WHERE id = ? OR order_number = ?", [id, id]);
+    const sql = isNum
+      ? "DELETE FROM orders WHERE id = ? OR order_number = ?"
+      : "DELETE FROM orders WHERE order_number = ?";
+    const params = isNum ? [parseInt(id, 10), String(id)] : [String(id)];
+
+    await pool.query(sql, params);
     res.json({ success: true, message: "Order deleted successfully" });
   } catch (err) {
     console.error("Error in deleteOrder:", err);
-    res.status(500).json({ success: false, message: "Failed to delete order" });
+    res.status(500).json({ success: false, message: `Failed to delete order: ${err.message}` });
   }
 }
 
 // POST /api/orders/:id/return (Admin Only)
 export async function processOrderReturn(req, res) {
   try {
+    await ensureOrderSchema();
     const { id } = req.params;
+    const { itemsToReturn, reason } = req.body || {};
+    const isNum = typeof id === "number" || (/^\d+$/).test(String(id).trim());
     let order = null;
 
     if (pool && isConnected) {
-      const [rows] = await pool.query("SELECT * FROM orders WHERE id = ? OR order_number = ? LIMIT 1", [id, id]);
+      const sql = isNum
+        ? "SELECT * FROM orders WHERE id = ? OR order_number = ? LIMIT 1"
+        : "SELECT * FROM orders WHERE order_number = ? LIMIT 1";
+      const params = isNum ? [parseInt(id, 10), String(id)] : [String(id)];
+
+      const [rows] = await pool.query(sql, params);
       if (rows.length > 0) order = rows[0];
     } else {
       order = inMemoryOrders.find((o) => o.orderNumber === id || String(o.id) === String(id));
     }
 
     if (!order) {
-      return res.status(404).json({ success: false, message: "Order not found" });
+      return res.status(404).json({ success: false, message: `Order #${id} not found.` });
     }
 
     let items = [];
@@ -352,78 +504,155 @@ export async function processOrderReturn(req, res) {
     } catch (e) {
       items = order.items || [];
     }
+    if (!Array.isArray(items)) items = [];
 
-    // Restore stock for returned items
-    for (const item of items) {
-      const qtyToRestore = parseInt(item.qty || item.quantity || 1, 10);
+    const itemsToProcess = Array.isArray(itemsToReturn) && itemsToReturn.length > 0
+      ? itemsToReturn
+      : items;
+
+    // Restore stock for returned items based on specified return quantity
+    for (const item of itemsToProcess) {
+      if (!item) continue;
+      const qtyToRestore = parseInt(item.returnQty || item.qty || item.quantity || 1, 10);
       const prodId = item.id;
       const szLabel = item.size;
       const colName = item.color;
 
-      if (pool && isConnected) {
-        const [pRows] = await pool.query("SELECT id, sizes FROM products WHERE id = ? OR slug = ? LIMIT 1", [prodId, item.slug || prodId]);
-        if (pRows.length > 0) {
-          const p = pRows[0];
-          let sizesArr = typeof p.sizes === "string" ? JSON.parse(p.sizes) : (p.sizes || []);
-          let updated = false;
+      if (pool && isConnected && prodId) {
+        try {
+          const pSql = "SELECT id, sizes FROM products WHERE id = ? OR slug = ? LIMIT 1";
+          const pParams = [String(prodId), item.slug || String(prodId)];
 
-          sizesArr = sizesArr.map((s) => {
-            if (typeof s === "object") {
-              const matchSz = String(s.label) === String(szLabel);
-              const matchCol = !colName || !s.color || String(s.color).toLowerCase() === String(colName).toLowerCase();
-              if (matchSz && matchCol) {
-                updated = true;
-                return { ...s, stock: (parseInt(s.stock || 0, 10) + qtyToRestore) };
-              }
+          const [pRows] = await pool.query(pSql, pParams);
+          if (pRows.length > 0) {
+            const p = pRows[0];
+            let rawSizes = p.sizes;
+            if (typeof rawSizes === "string") {
+              try { rawSizes = JSON.parse(rawSizes); } catch (e) { rawSizes = []; }
             }
-            return s;
-          });
+            if (!Array.isArray(rawSizes)) rawSizes = [];
 
-          if (updated) {
-            await pool.query("UPDATE products SET sizes = ? WHERE id = ?", [JSON.stringify(sizesArr), p.id]);
+            let sizesArr = rawSizes.map((s) => {
+              if (typeof s === "string") return { label: s, stock: 10 };
+              if (s && typeof s === "object") {
+                return {
+                  label: s.label || s.size || "Free Size",
+                  stock: s.stock !== undefined && s.stock !== null ? parseInt(s.stock, 10) : 10,
+                  color: s.color || "",
+                };
+              }
+              return { label: "Free Size", stock: 10 };
+            });
+
+            if (sizesArr.length === 0) {
+              sizesArr = [{ label: szLabel || "Free Size", stock: 10 }];
+            }
+
+            const targetSzNorm = String(szLabel || "").trim().toLowerCase();
+            const targetColNorm = String(colName || "").trim().toLowerCase();
+
+            let matchedIdx = sizesArr.findIndex((s) => {
+              const sLabelNorm = String(s.label || "").trim().toLowerCase();
+              const sColNorm = String(s.color || "").trim().toLowerCase();
+              return (sLabelNorm === targetSzNorm) && (!targetColNorm || !sColNorm || sColNorm === targetColNorm);
+            });
+
+            if (matchedIdx === -1) {
+              matchedIdx = sizesArr.findIndex((s) => String(s.label || "").trim().toLowerCase() === targetSzNorm);
+            }
+
+            if (matchedIdx === -1 && sizesArr.length > 0) {
+              matchedIdx = 0;
+            }
+
+            if (matchedIdx !== -1) {
+              const currentStock = parseInt(sizesArr[matchedIdx].stock ?? 0, 10);
+              sizesArr[matchedIdx].stock = currentStock + qtyToRestore;
+              await pool.query("UPDATE products SET sizes = ? WHERE id = ?", [JSON.stringify(sizesArr), p.id]);
+            }
           }
+        } catch (itemErr) {
+          console.error(`Warning: Failed to update stock for item ${prodId}:`, itemErr.message);
         }
       }
 
-      // Also update in-memory seedProducts
-      const memProd = seedProducts.find((p) => p.id === prodId || p.slug === item.slug);
-      if (memProd && Array.isArray(memProd.sizes)) {
-        memProd.sizes = memProd.sizes.map((s) => {
-          if (typeof s === "object" && String(s.label) === String(szLabel)) {
-            return { ...s, stock: (parseInt(s.stock || 0, 10) + qtyToRestore) };
-          }
-          return s;
-        });
+      // Also update in-memory seedProducts if present
+      const memProd = seedProducts.find((p) => String(p.id) === String(prodId) || p.slug === item.slug);
+      if (memProd) {
+        let memSizes = Array.isArray(memProd.sizes) ? memProd.sizes : [];
+        const targetSzNorm = String(szLabel || "").trim().toLowerCase();
+        let mIdx = memSizes.findIndex((s) => s && typeof s === "object" && String(s.label || "").trim().toLowerCase() === targetSzNorm);
+        if (mIdx === -1 && memSizes.length > 0) mIdx = 0;
+        if (mIdx !== -1 && memSizes[mIdx]) {
+          const cStock = parseInt(memSizes[mIdx].stock ?? 0, 10);
+          memSizes[mIdx].stock = cStock + qtyToRestore;
+        }
       }
     }
 
-    // Update order status
+    // Build return history entry
+    let returnHistory = [];
+    try {
+      returnHistory = typeof order.return_history === "string"
+        ? JSON.parse(order.return_history)
+        : (order.return_history || order.returnHistory || []);
+    } catch (e) {
+      returnHistory = [];
+    }
+    if (!Array.isArray(returnHistory)) returnHistory = [];
+
+    const returnLog = {
+      id: "RET-" + Date.now(),
+      timestamp: new Date().toISOString(),
+      reason: reason || "Customer Return",
+      items: itemsToProcess.map((it) => ({
+        id: it.id,
+        name: it.name || it.title || "Product",
+        size: it.size || "Free Size",
+        color: it.color || "",
+        returnQty: parseInt(it.returnQty || it.qty || it.quantity || 1, 10),
+      })),
+    };
+    returnHistory.push(returnLog);
+
+    // Update order status & return history
     if (pool && isConnected) {
-      await pool.query(
-        "UPDATE orders SET order_status = 'returned', payment_status = 'refunded' WHERE id = ? OR order_number = ?",
-        [id, id]
-      );
+      const uSql = isNum
+        ? "UPDATE orders SET order_status = 'returned', payment_status = 'refunded', return_history = ? WHERE id = ? OR order_number = ?"
+        : "UPDATE orders SET order_status = 'returned', payment_status = 'refunded', return_history = ? WHERE order_number = ?";
+      const uParams = isNum
+        ? [JSON.stringify(returnHistory), parseInt(id, 10), String(id)]
+        : [JSON.stringify(returnHistory), String(id)];
+      await pool.query(uSql, uParams);
     } else {
       order.orderStatus = "returned";
       order.paymentStatus = "refunded";
+      order.return_history = returnHistory;
+      order.returnHistory = returnHistory;
     }
 
     res.json({ success: true, message: `Order #${id} marked as returned and item stock restored to inventory.` });
   } catch (err) {
     console.error("Error in processOrderReturn:", err);
-    res.status(500).json({ success: false, message: "Failed to process order return" });
+    res.status(500).json({ success: false, message: `Failed to process order return: ${err.message}` });
   }
 }
 
 // POST /api/orders/:id/replace (Admin Only)
 export async function processOrderReplace(req, res) {
   try {
+    await ensureOrderSchema();
     const { id } = req.params;
     const { returnItemId, replacementProductId, replacementSize, replacementColor, qty = 1 } = req.body;
+    const isNum = typeof id === "number" || (/^\d+$/).test(String(id).trim());
 
     let order = null;
     if (pool && isConnected) {
-      const [rows] = await pool.query("SELECT * FROM orders WHERE id = ? OR order_number = ? LIMIT 1", [id, id]);
+      const sql = isNum
+        ? "SELECT * FROM orders WHERE id = ? OR order_number = ? LIMIT 1"
+        : "SELECT * FROM orders WHERE order_number = ? LIMIT 1";
+      const params = isNum ? [parseInt(id, 10), String(id)] : [String(id)];
+      const [rows] = await pool.query(sql, params);
       if (rows.length > 0) order = rows[0];
     } else {
       order = inMemoryOrders.find((o) => o.orderNumber === id || String(o.id) === String(id));
@@ -439,25 +668,40 @@ export async function processOrderReplace(req, res) {
     } catch (e) {
       items = order.items || [];
     }
+    if (!Array.isArray(items)) items = [];
 
     const replaceQty = parseInt(qty, 10) || 1;
 
     // 1. Restore stock of returned item
-    const originalItem = items.find((i) => i.id === returnItemId || String(i.id) === String(returnItemId)) || items[0];
-    if (originalItem) {
-      if (pool && isConnected) {
-        const [pRows] = await pool.query("SELECT id, sizes FROM products WHERE id = ? OR slug = ? LIMIT 1", [originalItem.id, originalItem.slug || originalItem.id]);
+    const originalItem = items.find((i) => i && String(i.id) === String(returnItemId)) || items[0];
+    if (originalItem && pool && isConnected) {
+      try {
+        const prodId = originalItem.id;
+        const isProdNum = typeof prodId === "number" || (/^\d+$/).test(String(prodId).trim());
+        const pSql = isProdNum
+          ? "SELECT id, sizes FROM products WHERE id = ? OR slug = ? LIMIT 1"
+          : "SELECT id, sizes FROM products WHERE slug = ? OR id = ? LIMIT 1";
+        const pParams = isProdNum ? [parseInt(prodId, 10), originalItem.slug || String(prodId)] : [originalItem.slug || String(prodId), String(prodId)];
+
+        const [pRows] = await pool.query(pSql, pParams);
         if (pRows.length > 0) {
           const p = pRows[0];
-          let sizesArr = typeof p.sizes === "string" ? JSON.parse(p.sizes) : (p.sizes || []);
+          let sizesArr = [];
+          if (p.sizes) {
+            sizesArr = typeof p.sizes === "string" ? JSON.parse(p.sizes) : (p.sizes || []);
+          }
+          if (!Array.isArray(sizesArr)) sizesArr = [];
+
           sizesArr = sizesArr.map((s) => {
-            if (typeof s === "object" && String(s.label) === String(originalItem.size)) {
+            if (s && typeof s === "object" && String(s.label) === String(originalItem.size)) {
               return { ...s, stock: (parseInt(s.stock || 0, 10) + replaceQty) };
             }
             return s;
           });
           await pool.query("UPDATE products SET sizes = ? WHERE id = ?", [JSON.stringify(sizesArr), p.id]);
         }
+      } catch (origErr) {
+        console.error("Warning: Failed restoring stock for replacement original item:", origErr.message);
       }
     }
 
@@ -465,26 +709,40 @@ export async function processOrderReplace(req, res) {
     const targetProdId = replacementProductId || originalItem?.id;
     let replacementProd = null;
 
-    if (pool && isConnected) {
-      const [rRows] = await pool.query("SELECT id, name, sizes, price FROM products WHERE id = ? OR slug = ? LIMIT 1", [targetProdId, targetProdId]);
-      if (rRows.length > 0) replacementProd = rRows[0];
+    if (pool && isConnected && targetProdId) {
+      try {
+        const isTargetNum = typeof targetProdId === "number" || (/^\d+$/).test(String(targetProdId).trim());
+        const rSql = isTargetNum
+          ? "SELECT id, name, sizes, price FROM products WHERE id = ? OR slug = ? LIMIT 1"
+          : "SELECT id, name, sizes, price FROM products WHERE slug = ? OR id = ? LIMIT 1";
+        const rParams = isTargetNum ? [parseInt(targetProdId, 10), String(targetProdId)] : [String(targetProdId), String(targetProdId)];
+        const [rRows] = await pool.query(rSql, rParams);
+        if (rRows.length > 0) replacementProd = rRows[0];
+      } catch (rErr) {
+        console.error("Warning querying replacement product:", rErr.message);
+      }
     }
 
     if (!replacementProd) {
-      replacementProd = seedProducts.find((p) => p.id === targetProdId || p.slug === targetProdId) || seedProducts[0];
+      replacementProd = seedProducts.find((p) => String(p.id) === String(targetProdId) || p.slug === targetProdId) || seedProducts[0];
     }
 
     if (replacementProd) {
-      let rSizes = typeof replacementProd.sizes === "string" ? JSON.parse(replacementProd.sizes) : (replacementProd.sizes || []);
+      let rSizes = [];
+      if (replacementProd.sizes) {
+        rSizes = typeof replacementProd.sizes === "string" ? JSON.parse(replacementProd.sizes) : (replacementProd.sizes || []);
+      }
+      if (!Array.isArray(rSizes)) rSizes = [];
+
       const targetSize = replacementSize || originalItem?.size || "Free Size";
       const targetColor = replacementColor || originalItem?.color || "";
 
       let foundVariant = rSizes.find((s) => {
-        if (typeof s !== "object") return false;
+        if (!s || typeof s !== "object") return false;
         const matchSz = String(s.label) === String(targetSize);
         const matchCol = !targetColor || !s.color || String(s.color).toLowerCase() === String(targetColor).toLowerCase();
         return matchSz && matchCol;
-      }) || rSizes.find((s) => typeof s === "object" && String(s.label) === String(targetSize));
+      }) || rSizes.find((s) => s && typeof s === "object" && String(s.label) === String(targetSize));
 
       const availableStock = foundVariant ? parseInt(foundVariant.stock || 0, 10) : 10;
       if (availableStock < replaceQty) {
@@ -496,7 +754,7 @@ export async function processOrderReplace(req, res) {
 
       // Decrement replacement stock
       rSizes = rSizes.map((s) => {
-        if (typeof s === "object") {
+        if (s && typeof s === "object") {
           const matchSz = String(s.label) === String(targetSize);
           const matchCol = !targetColor || !s.color || String(s.color).toLowerCase() === String(targetColor).toLowerCase();
           if (matchSz && matchCol) {
@@ -506,16 +764,60 @@ export async function processOrderReplace(req, res) {
         return s;
       });
 
-      if (pool && isConnected) {
+      if (pool && isConnected && replacementProd.id) {
         await pool.query("UPDATE products SET sizes = ? WHERE id = ?", [JSON.stringify(rSizes), replacementProd.id]);
       }
     }
 
-    // Update order status
+    // Build replacement history entry
+    const { reason } = req.body || {};
+    let returnHistory = [];
+    try {
+      returnHistory = typeof order.return_history === "string"
+        ? JSON.parse(order.return_history)
+        : (order.return_history || order.returnHistory || []);
+    } catch (e) {
+      returnHistory = [];
+    }
+    if (!Array.isArray(returnHistory)) returnHistory = [];
+
+    const replaceLog = {
+      id: "REP-" + Date.now(),
+      type: "replacement",
+      timestamp: new Date().toISOString(),
+      reason: reason || "Size / Fitting / Color Exchange Replacement",
+      returnedItem: {
+        id: originalItem?.id,
+        name: originalItem?.name || "Product",
+        size: originalItem?.size || "Free Size",
+        color: originalItem?.color || "",
+      },
+      replacementItem: {
+        id: replacementProd?.id || targetProdId,
+        name: replacementProd?.name || originalItem?.name || "Product",
+        size: targetSize,
+        color: targetColor,
+        qty: replaceQty,
+      },
+      qty: replaceQty,
+      replacementSize: targetSize,
+      replacementColor: targetColor,
+    };
+    returnHistory.push(replaceLog);
+
+    // Update order status & return history
     if (pool && isConnected) {
-      await pool.query("UPDATE orders SET order_status = 'replaced' WHERE id = ? OR order_number = ?", [id, id]);
+      const uSql = isNum
+        ? "UPDATE orders SET order_status = 'replaced', return_history = ? WHERE id = ? OR order_number = ?"
+        : "UPDATE orders SET order_status = 'replaced', return_history = ? WHERE order_number = ?";
+      const uParams = isNum
+        ? [JSON.stringify(returnHistory), parseInt(id, 10), String(id)]
+        : [JSON.stringify(returnHistory), String(id)];
+      await pool.query(uSql, uParams);
     } else {
       order.orderStatus = "replaced";
+      order.return_history = returnHistory;
+      order.returnHistory = returnHistory;
     }
 
     res.json({
@@ -524,7 +826,7 @@ export async function processOrderReplace(req, res) {
     });
   } catch (err) {
     console.error("Error in processOrderReplace:", err);
-    res.status(500).json({ success: false, message: "Failed to process order replacement" });
+    res.status(500).json({ success: false, message: `Failed to process order replacement: ${err.message}` });
   }
 }
 

@@ -117,9 +117,10 @@ export async function adminDeleteOrder(orderId) {
   });
 }
 
-export async function adminReturnOrder(orderId) {
+export async function adminReturnOrder(orderId, returnPayload) {
   return await apiFetch(`/orders/${orderId}/return`, {
     method: "POST",
+    body: JSON.stringify(returnPayload || {}),
   });
 }
 

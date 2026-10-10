@@ -122,9 +122,23 @@ app.use((err, req, res, next) => {
 // Start Server & Test MySQL Connection
 async function startServer() {
   await testConnection();
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     console.log(`🚀 Agal Boutique Express Server running on http://localhost:${PORT}`);
     console.log(`📡 Health Check URL: http://localhost:${PORT}/api/health`);
+  });
+
+  server.on("error", (err) => {
+    if (err.code === "EADDRINUSE") {
+      console.error(`⚠️ Port ${PORT} is already in use by another process.`);
+      console.log(`💡 Retrying after closing stagnant connection or fallback...`);
+      setTimeout(() => {
+        try {
+          server.close();
+        } catch (e) {}
+      }, 1000);
+    } else {
+      console.error("Server Listen Error:", err);
+    }
   });
 }
 

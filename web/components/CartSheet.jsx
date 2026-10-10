@@ -32,12 +32,14 @@ export default function CartSheet() {
   const [freeThreshold, setFreeThreshold] = useState(999);
 
   useEffect(() => {
-    getCmsSettings().then((res) => {
-      if (res?.settings?.delivery_settings?.freeThreshold !== undefined) {
-        setFreeThreshold(Number(res.settings.delivery_settings.freeThreshold));
-      }
-    });
-  }, []);
+    if (open) {
+      getCmsSettings().then((res) => {
+        if (res?.settings?.delivery_settings?.freeThreshold !== undefined) {
+          setFreeThreshold(Number(res.settings.delivery_settings.freeThreshold));
+        }
+      });
+    }
+  }, [open]);
 
   const totalQuantity = items.reduce(
     (acc, i) => acc + (i.qty || i.quantity || 1),

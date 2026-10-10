@@ -135,24 +135,24 @@ function SalesAnalyticsChart({ orders = [] }) {
       </div>
 
       <div className="pt-4 pb-2">
-        <div className="h-44 flex items-end justify-between gap-2 sm:gap-4 px-2">
+        <div className="h-48 flex items-end justify-between gap-2 sm:gap-4 px-2">
           {dataPoints.map((dp, idx) => {
-            const heightPercent = Math.max(14, Math.round((dp.revenue / maxRevenue) * 100));
+            const heightPercent = Math.max(12, Math.round((dp.revenue / maxRevenue) * 100));
             return (
-              <div key={idx} className="flex-1 flex flex-col items-center gap-2 group relative">
-                <div className="absolute -top-12 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-[10px] py-1 px-2 rounded font-bold shadow-lg pointer-events-none z-20 whitespace-nowrap">
+              <div key={idx} className="flex-1 h-full flex flex-col items-center justify-end gap-2 group relative">
+                <div className="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-[10px] py-1 px-2 rounded font-bold shadow-lg pointer-events-none z-20 whitespace-nowrap">
                   <div>₹{dp.revenue.toLocaleString("en-IN")}</div>
                   <div className="text-emerald-400">{dp.count} Orders</div>
                 </div>
 
-                <div className="w-full bg-gray-100 rounded-t-lg overflow-hidden flex items-end h-full">
+                <div className="w-full flex-1 bg-gray-100/90 rounded-t-lg overflow-hidden flex items-end border-b border-gray-200">
                   <div
-                    className="w-full bg-gradient-to-t from-plum to-plum/70 group-hover:from-plum-900 group-hover:to-plum transition-all duration-300 rounded-t-lg"
+                    className="w-full bg-gradient-to-t from-plum to-plum/80 group-hover:from-plum-900 group-hover:to-plum transition-all duration-300 rounded-t-md shadow-xs"
                     style={{ height: `${heightPercent}%` }}
                   />
                 </div>
 
-                <span className="text-[11px] font-bold text-gray-600 group-hover:text-plum transition-colors">
+                <span className="text-[11px] font-bold text-gray-600 group-hover:text-plum transition-colors shrink-0">
                   {dp.label}
                 </span>
               </div>
@@ -186,6 +186,17 @@ export default function AdminPage() {
     promo_banner: { title: "", subtitle: "", image_url: "", button_text: "", button_link: "" },
     store_info: { phone: "", whatsapp: "", email: "", address: "" },
     delivery_settings: { standardFee: 79, freeThreshold: 999, estimateDays: "3-5 Business Days" },
+    header_nav_menu: [
+      { title: "Popular", url: "/shop" },
+      { title: "Sarees & Handlooms", url: "/shop?category=sarees" },
+      { title: "Kurtis & Tunics", url: "/shop?category=kurtis" },
+      { title: "Full Sets & Anarkalis", url: "/shop?category=full-sets" },
+      { title: "Blouses & Stitching", url: "/shop?category=blouses" },
+      { title: "Lehenga Sets", url: "/shop?category=lehengas" },
+      { title: "Kidswear & Pattu Pavadai", url: "/shop?category=kidswear" },
+      { title: "About Us", url: "/about" },
+      { title: "Contact Us", url: "/contact" },
+    ],
   });
 
   // Product Modal State
@@ -252,20 +263,91 @@ export default function AdminPage() {
     qty: 1,
   });
 
-  // Check initial login state & set up real-time orders polling (sync frontend orders)
+  // Custom Agal Boutique Popup & Return Modal States
+  const [toastModal, setToastModal] = useState({
+    open: false,
+    title: "",
+    message: "",
+    type: "info",
+    onConfirm: null,
+  });
+
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [returnItemsState, setReturnItemsState] = useState([]);
+  const [returnReason, setReturnReason] = useState("Size / Fitting Issue");
+
+  const showToast = (message, type = "success", title = "") => {
+    let defaultTitle = "Notice";
+    if (type === "success") defaultTitle = "Success";
+    if (type === "warning") defaultTitle = "Warning";
+    if (type === "error") defaultTitle = "Action Failed";
+
+    setToastModal({
+      open: true,
+      title: title || defaultTitle,
+      message,
+      type,
+      onConfirm: null,
+    });
+  };
+
+  const showConfirmModal = (message, onConfirm, title = "Confirm Action") => {
+    setToastModal({
+      open: true,
+      title,
+      message,
+      type: "confirm",
+      onConfirm,
+    });
+  };
+
+  // Refreshing States
+  const [refreshingOrders, setRefreshingOrders] = useState(false);
+  const [refreshingProducts, setRefreshingProducts] = useState(false);
+
+  const handleRefreshOrders = async () => {
+    setRefreshingOrders(true);
+    try {
+      const res = await adminGetOrders();
+      if (res?.orders) setOrders(res.orders);
+      const statsRes = await adminGetStats();
+      if (statsRes?.stats) setStats(statsRes.stats);
+    } catch (e) {
+      console.error("Error refreshing orders:", e);
+    } finally {
+      setTimeout(() => setRefreshingOrders(false), 300);
+    }
+  };
+
+  const handleRefreshProducts = async () => {
+    setRefreshingProducts(true);
+    try {
+      const res = await getProducts({ limit: 200 });
+      if (res?.products) setProducts(res.products);
+    } catch (e) {
+      console.error("Error refreshing products:", e);
+    } finally {
+      setTimeout(() => setRefreshingProducts(false), 300);
+    }
+  };
+
+  // Check initial login state & set up real-time orders & products polling (sync frontend orders and inventory stock)
   useEffect(() => {
     const token = localStorage.getItem("agal_admin_token");
     if (token) {
       setIsAuthenticated(true);
       loadAllData();
 
-      // Automatically sync incoming frontend orders & stats every 8 seconds
+      // Automatically sync incoming frontend orders, stats & inventory stock every 8 seconds
       const pollTimer = setInterval(() => {
         adminGetOrders().then((res) => {
           if (res?.orders) setOrders(res.orders);
         });
         adminGetStats().then((res) => {
           if (res?.stats) setStats(res.stats);
+        });
+        getProducts({ limit: 200 }).then((res) => {
+          if (res?.products) setProducts(res.products);
         });
       }, 8000);
 
@@ -502,19 +584,20 @@ export default function AdminPage() {
     }
 
     if (res?.success) {
-      alert("✅ Product saved successfully to database!");
+      showToast("Product saved successfully to database!", "success");
       setShowProductModal(false);
       loadAllData();
     } else {
-      alert(`⚠️ Failed to save product: ${res?.message || res?.error || "Unknown server error"}`);
+      showToast(`Failed to save product: ${res?.message || res?.error || "Unknown server error"}`, "error");
     }
   };
 
-  const handleDeleteProduct = async (id) => {
-    if (confirm("Are you sure you want to delete this product from DB?")) {
+  const handleDeleteProduct = (id) => {
+    showConfirmModal("Are you sure you want to delete this product from DB?", async () => {
       await adminDeleteProduct(id);
+      showToast("Product deleted successfully", "success");
       loadAllData();
-    }
+    });
   };
 
   // Filter & Search product items
@@ -555,13 +638,14 @@ export default function AdminPage() {
     }
   };
 
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = () => {
     if (selectedProductIds.length === 0) return;
-    if (confirm(`Are you sure you want to delete ${selectedProductIds.length} selected products from DB?`)) {
+    showConfirmModal(`Are you sure you want to delete ${selectedProductIds.length} selected products from DB?`, async () => {
       await adminBulkDeleteProducts(selectedProductIds);
       setSelectedProductIds([]);
+      showToast(`${selectedProductIds.length} products deleted successfully`, "success");
       loadAllData();
-    }
+    });
   };
 
   // Quick View Function
@@ -604,14 +688,16 @@ export default function AdminPage() {
     }
 
     setShowCategoryModal(false);
+    showToast("Category saved successfully", "success");
     loadAllData();
   };
 
-  const handleDeleteCategory = async (id) => {
-    if (confirm("Are you sure you want to delete this category from DB?")) {
+  const handleDeleteCategory = (id) => {
+    showConfirmModal("Are you sure you want to delete this category from DB?", async () => {
       await adminDeleteCategory(id);
+      showToast("Category deleted successfully", "success");
       loadAllData();
-    }
+    });
   };
 
   // Order Actions & Filtering
@@ -627,29 +713,87 @@ export default function AdminPage() {
     }
   };
 
-  const handleDeleteOrder = async (orderId) => {
-    if (confirm(`Are you sure you want to delete Order #${orderId} permanently from database?`)) {
+  const handleDeleteOrder = (orderId) => {
+    showConfirmModal(`Are you sure you want to delete Order #${orderId} permanently from database?`, async () => {
       await adminDeleteOrder(orderId);
       if (viewingOrder?.orderNumber === orderId || String(viewingOrder?.id) === String(orderId)) {
         setShowOrderModal(false);
         setViewingOrder(null);
       }
+      showToast("Order deleted successfully", "success");
       loadAllData();
-    }
+    });
   };
 
-  const handleReturnOrder = async (orderId) => {
-    if (confirm(`Confirm processing RETURN for Order #${orderId}? Returned item quantities will be added back into inventory stock.`)) {
-      const res = await adminReturnOrder(orderId);
-      if (res?.success) {
-        alert(`✅ ${res.message}`);
-        loadAllData();
-        if (viewingOrder && (viewingOrder.orderNumber === orderId || String(viewingOrder.id) === String(orderId))) {
-          setViewingOrder((prev) => ({ ...prev, orderStatus: "returned", paymentStatus: "refunded" }));
-        }
-      } else {
-        alert(`⚠️ Return failed: ${res?.message || "Error processing return"}`);
+  const handleOpenReturnModal = (order) => {
+    setViewingOrder(order);
+    const initialItems = (order.items || []).map((item) => ({
+      id: item.id,
+      name: item.name,
+      slug: item.slug,
+      size: item.size || "Free Size",
+      color: item.color || "",
+      price: item.price,
+      image: item.image,
+      maxQty: parseInt(item.qty || 1, 10),
+      returnQty: parseInt(item.qty || 1, 10),
+      selected: true,
+    }));
+    setReturnItemsState(initialItems);
+    setReturnReason("Size / Fitting Issue");
+    setShowReturnModal(true);
+  };
+
+  const handleSubmitReturn = async (e) => {
+    e.preventDefault();
+    if (!viewingOrder) return;
+    const orderId = viewingOrder.orderNumber || viewingOrder.id;
+
+    const selectedReturnItems = returnItemsState
+      .filter((i) => i.selected && i.returnQty > 0)
+      .map((i) => ({
+        id: i.id,
+        name: i.name,
+        slug: i.slug,
+        size: i.size,
+        color: i.color,
+        returnQty: i.returnQty,
+      }));
+
+    if (selectedReturnItems.length === 0) {
+      showToast("Please select at least 1 item and quantity to return.", "warning");
+      return;
+    }
+
+    const res = await adminReturnOrder(orderId, {
+      itemsToReturn: selectedReturnItems,
+      reason: returnReason,
+    });
+
+    if (res?.success) {
+      setShowReturnModal(false);
+      showToast(res.message || "Order return processed and stock restored.", "success", "Return Completed");
+      loadAllData();
+      if (viewingOrder && (viewingOrder.orderNumber === orderId || String(viewingOrder.id) === String(orderId))) {
+        const newLog = {
+          id: "RET-" + Date.now(),
+          timestamp: new Date().toISOString(),
+          reason: returnReason,
+          items: selectedReturnItems,
+        };
+        const updatedHist = Array.isArray(viewingOrder.returnHistory)
+          ? [...viewingOrder.returnHistory, newLog]
+          : [newLog];
+
+        setViewingOrder((prev) => ({
+          ...prev,
+          orderStatus: "returned",
+          paymentStatus: "refunded",
+          returnHistory: updatedHist,
+        }));
       }
+    } else {
+      showToast(res?.message || "Failed to process return.", "error", "Return Failed");
     }
   };
 
@@ -662,6 +806,7 @@ export default function AdminPage() {
       replacementSize: firstItem.size || "M",
       replacementColor: firstItem.color || "",
       qty: 1,
+      reason: "Size / Fitting Issue Exchange",
     });
     setShowReplaceModal(true);
   };
@@ -673,12 +818,35 @@ export default function AdminPage() {
 
     const res = await adminReplaceOrder(orderId, replaceForm);
     if (res?.success) {
-      alert(`✅ ${res.message}`);
       setShowReplaceModal(false);
+      showToast(res.message, "success", "Replacement Processed");
       loadAllData();
-      setViewingOrder((prev) => ({ ...prev, orderStatus: "replaced" }));
+
+      const repLog = {
+        id: "REP-" + Date.now(),
+        type: "replacement",
+        timestamp: new Date().toISOString(),
+        reason: replaceForm.reason || "Size / Fitting Issue Exchange",
+        returnedItemId: replaceForm.returnItemId,
+        replacementProductId: replaceForm.replacementProductId,
+        replacementSize: replaceForm.replacementSize,
+        replacementColor: replaceForm.replacementColor,
+        qty: replaceForm.qty,
+      };
+
+      setViewingOrder((prev) => {
+        if (!prev) return prev;
+        const updatedHist = Array.isArray(prev.returnHistory)
+          ? [...prev.returnHistory, repLog]
+          : [repLog];
+        return {
+          ...prev,
+          orderStatus: "replaced",
+          returnHistory: updatedHist,
+        };
+      });
     } else {
-      alert(`⚠️ Replacement failed: ${res?.message || "Error processing replacement"}`);
+      showToast(res?.message || "Error processing replacement.", "error", "Replacement Failed");
     }
   };
 
@@ -1045,13 +1213,24 @@ export default function AdminPage() {
                   <h2 className="text-base font-bold text-gray-900">Database Products ({filteredProducts.length})</h2>
                   <p className="text-xs text-gray-500">Search, filter, view, edit, or bulk delete products in MySQL database.</p>
                 </div>
-                <button
-                  onClick={handleOpenNewProduct}
-                  className="px-4 py-2.5 bg-plum text-white font-bold rounded-lg text-xs flex items-center gap-1.5 hover:bg-plum-900 transition-colors cursor-pointer shadow-xs shrink-0 self-start sm:self-auto"
-                >
-                  <Plus size={16} />
-                  <span>Add Product</span>
-                </button>
+                <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                  <button
+                    onClick={handleRefreshProducts}
+                    disabled={refreshingProducts}
+                    title="Reload Products Data"
+                    className="px-3.5 py-2.5 bg-gray-100 text-gray-700 hover:bg-gray-200 font-bold rounded-lg text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 border border-gray-200"
+                  >
+                    <ArrowsClockwise size={16} className={refreshingProducts ? "animate-spin text-plum" : ""} />
+                    <span>Reload Products</span>
+                  </button>
+                  <button
+                    onClick={handleOpenNewProduct}
+                    className="px-4 py-2.5 bg-plum text-white font-bold rounded-lg text-xs flex items-center gap-1.5 hover:bg-plum-900 transition-colors cursor-pointer shadow-xs shrink-0"
+                  >
+                    <Plus size={16} />
+                    <span>Add Product</span>
+                  </button>
+                </div>
               </div>
 
               {/* Search & Filter Inputs Bar */}
@@ -1354,6 +1533,15 @@ export default function AdminPage() {
                   <h2 className="text-base font-bold text-gray-900">Database Customer Orders ({filteredOrders.length})</h2>
                   <p className="text-xs text-gray-500">Live order sync from frontend checkout. Filter, inspect items, update status, or delete.</p>
                 </div>
+                <button
+                  onClick={handleRefreshOrders}
+                  disabled={refreshingOrders}
+                  title="Reload Orders Data"
+                  className="px-3.5 py-2 bg-plum text-white font-bold rounded-lg text-xs flex items-center gap-1.5 hover:bg-plum-900 transition-colors cursor-pointer shadow-xs shrink-0 self-start sm:self-auto"
+                >
+                  <ArrowsClockwise size={16} className={refreshingOrders ? "animate-spin" : ""} />
+                  <span>Reload Orders</span>
+                </button>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-gray-100">
@@ -1414,6 +1602,14 @@ export default function AdminPage() {
                       </div>
 
                       <div className="flex items-center gap-2.5">
+                        {/* Return Badge */}
+                        {(o.orderStatus === "returned" || (Array.isArray(o.returnHistory) && o.returnHistory.length > 0)) && (
+                          <span className="text-[11px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border shadow-2xs bg-red-100 text-red-900 border-red-300 flex items-center gap-1">
+                            <ArrowUDownLeft size={12} weight="bold" />
+                            <span>Returned {Array.isArray(o.returnHistory) && o.returnHistory.length > 0 ? `(${o.returnHistory.length})` : ""}</span>
+                          </span>
+                        )}
+
                         {/* Payment Method Online / COD Badge */}
                         <span className={`text-[11px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border shadow-2xs ${
                           (o.paymentMethod || o.payment_method || "").toLowerCase() === "cod"
@@ -1432,6 +1628,8 @@ export default function AdminPage() {
                           <option value="confirmed">Confirmed</option>
                           <option value="shipped">Shipped</option>
                           <option value="delivered">Delivered</option>
+                          <option value="returned">Returned</option>
+                          <option value="replaced">Replaced</option>
                           <option value="cancelled">Cancelled</option>
                         </select>
 
@@ -1484,7 +1682,9 @@ export default function AdminPage() {
                             <div className="space-y-1">
                               {o.items?.slice(0, 3).map((item, idx) => (
                                 <div key={idx} className="flex items-center justify-between text-gray-800">
-                                  <span className="truncate max-w-[180px]">{item.name} ({item.size || "Free"}) × {item.qty}</span>
+                                  <span className="truncate max-w-[220px]" title={`${item.name} (${item.size || "Free Size"}${item.color ? `, Color: ${item.color}` : ""})`}>
+                                    {item.name} ({item.size || "Free Size"}{item.color ? ` • ${item.color}` : ""}) × {item.qty}
+                                  </span>
                                   <span className="font-bold">₹{item.price * item.qty}</span>
                                 </div>
                               ))}
@@ -1861,21 +2061,33 @@ export default function AdminPage() {
 
             {/* Top Announcement Bar */}
             <div className="space-y-4 pt-4 border-t border-gray-100">
-              <h3 className="text-sm font-bold text-plum border-l-4 border-plum pl-2">Top Announcement Bar</h3>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <h3 className="text-sm font-bold text-plum border-l-4 border-plum pl-2">Top Announcement Marquee Bar</h3>
+                <label className="flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={cms.announcement_bar?.enabled !== false}
+                    onChange={(e) => setCms({ ...cms, announcement_bar: { ...cms.announcement_bar, enabled: e.target.checked } })}
+                    className="w-4 h-4 rounded text-plum cursor-pointer"
+                  />
+                  <span>Enable Announcement Marquee Bar</span>
+                </label>
+              </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Announcement Text</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Announcement Marquee Text</label>
                 <input
                   type="text"
                   value={cms.announcement_bar?.text || ""}
                   onChange={(e) => setCms({ ...cms, announcement_bar: { ...cms.announcement_bar, text: e.target.value } })}
-                  className="w-full h-10 px-3 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-plum"
+                  placeholder="✨ Free Express Delivery across India on orders above ₹999 | Direct WhatsApp Support"
+                  className="w-full h-10 px-3 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-plum font-medium"
                 />
               </div>
               <button
                 onClick={() => handleSaveCms("announcement_bar", cms.announcement_bar)}
-                className="px-4 py-2 bg-plum text-white text-xs font-bold rounded-lg hover:bg-plum-900 transition-colors cursor-pointer"
+                className="px-4 py-2 bg-plum text-white text-xs font-bold rounded-lg hover:bg-plum-900 transition-colors cursor-pointer shadow-xs"
               >
-                Save Announcement Bar
+                Save Announcement Bar Settings
               </button>
             </div>
 
@@ -1907,6 +2119,84 @@ export default function AdminPage() {
                 className="px-4 py-2 bg-plum text-white text-xs font-bold rounded-lg hover:bg-plum-900 transition-colors cursor-pointer"
               >
                 Save Contact Info
+              </button>
+            </div>
+
+            {/* HEADER NAVIGATION MENU CMS MANAGER */}
+            <div className="space-y-4 pt-6 border-t border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-plum border-l-4 border-plum pl-2">Header Navigation Menu Links (CMS)</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">Configure main navigation menu items and target URLs displayed in website header.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const currentMenu = Array.isArray(cms.header_nav_menu) ? cms.header_nav_menu : [];
+                    const updated = [...currentMenu, { title: "New Item", url: "/shop" }];
+                    setCms({ ...cms, header_nav_menu: updated });
+                  }}
+                  className="px-3 py-1.5 bg-emerald-700 text-white text-xs font-bold rounded-lg hover:bg-emerald-800 transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  <Plus size={14} /> Add Menu Item
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {(Array.isArray(cms.header_nav_menu) ? cms.header_nav_menu : []).map((item, mIdx) => (
+                  <div key={mIdx} className="p-3.5 bg-gray-50 border border-gray-200 rounded-xl flex flex-col sm:flex-row items-center gap-3">
+                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-700 mb-0.5">Menu Title / Label</label>
+                        <input
+                          type="text"
+                          value={item.title || ""}
+                          onChange={(e) => {
+                            const updated = [...(cms.header_nav_menu || [])];
+                            updated[mIdx] = { ...updated[mIdx], title: e.target.value };
+                            setCms({ ...cms, header_nav_menu: updated });
+                          }}
+                          className="w-full h-9 px-2.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-plum font-semibold"
+                          placeholder="e.g. Sarees & Silks"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-700 mb-0.5">Target Link URL</label>
+                        <input
+                          type="text"
+                          value={item.url || ""}
+                          onChange={(e) => {
+                            const updated = [...(cms.header_nav_menu || [])];
+                            updated[mIdx] = { ...updated[mIdx], url: e.target.value };
+                            setCms({ ...cms, header_nav_menu: updated });
+                          }}
+                          className="w-full h-9 px-2.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-plum font-mono text-plum"
+                          placeholder="e.g. /shop?category=sarees"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = (cms.header_nav_menu || []).filter((_, i) => i !== mIdx);
+                        setCms({ ...cms, header_nav_menu: updated });
+                      }}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer shrink-0"
+                      title="Remove Menu Item"
+                    >
+                      <Trash size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleSaveCms("header_nav_menu", cms.header_nav_menu)}
+                className="px-5 py-2.5 bg-plum text-white text-xs font-bold rounded-lg hover:bg-plum-900 transition-colors cursor-pointer shadow-xs"
+              >
+                Save Navigation Menu to DB
               </button>
             </div>
           </div>
@@ -2798,6 +3088,8 @@ export default function AdminPage() {
                   <option value="confirmed">Confirmed</option>
                   <option value="shipped">Shipped</option>
                   <option value="delivered">Delivered</option>
+                  <option value="returned">Returned</option>
+                  <option value="replaced">Replaced</option>
                   <option value="cancelled">Cancelled</option>
                 </select>
               </div>
@@ -2966,12 +3258,69 @@ export default function AdminPage() {
               );
             })()}
 
+            {/* Return & Replacement History Log section */}
+            {(viewingOrder.returnHistory || viewingOrder.return_history) &&
+              (Array.isArray(viewingOrder.returnHistory) ? viewingOrder.returnHistory : (typeof viewingOrder.return_history === "string" ? JSON.parse(viewingOrder.return_history) : []))?.length > 0 && (
+                <div className="p-3.5 rounded-xl bg-gradient-to-r from-red-50/80 to-purple-50/80 border border-red-200 space-y-2.5 text-xs">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 font-extrabold text-gray-900">
+                      <ArrowUDownLeft size={16} className="text-plum shrink-0" />
+                      <span>Order Return & Replacement History Log</span>
+                    </div>
+                    <span className="bg-plum/10 text-plum text-[10px] font-black px-2.5 py-0.5 rounded-full border border-plum/20 uppercase">
+                      Audit Trail
+                    </span>
+                  </div>
+                  <div className="space-y-3 divide-y divide-gray-200/80 pt-1">
+                    {(Array.isArray(viewingOrder.returnHistory)
+                      ? viewingOrder.returnHistory
+                      : (typeof viewingOrder.return_history === "string" ? JSON.parse(viewingOrder.return_history) : [])
+                    ).map((log, lIdx) => {
+                      const isReplacement = log.type === "replacement" || log.id?.startsWith("REP");
+                      return (
+                        <div key={lIdx} className="pt-2.5 first:pt-0 space-y-1.5">
+                          <div className="flex justify-between items-center text-[11px] font-bold text-gray-800">
+                            <span className="flex items-center gap-1.5">
+                              <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-black tracking-wider ${isReplacement ? "bg-purple-100 text-purple-900 border border-purple-300" : "bg-red-100 text-red-900 border border-red-300"}`}>
+                                {isReplacement ? "🔄 Replacement" : "↩️ Return"}
+                              </span>
+                              <span>Reason: <strong className="text-gray-900 font-extrabold">{log.reason || "Customer Request"}</strong></span>
+                            </span>
+                            <span className="text-gray-500 font-mono text-[10px]">
+                              {log.timestamp ? new Date(log.timestamp).toLocaleString("en-IN", { dateStyle: "short", timeStyle: "short" }) : ""}
+                            </span>
+                          </div>
+
+                          {isReplacement ? (
+                            <div className="text-[11px] bg-white p-2 rounded-lg border border-purple-200 font-medium text-purple-950 space-y-0.5 shadow-2xs">
+                              <div>Returned Item: <strong className="font-bold">{log.returnedItem?.name || log.returnedItemId || "Product"}</strong> ({log.returnedItem?.size || ""})</div>
+                              <div>Replacement Unit: <strong className="font-bold text-plum">{log.replacementItem?.name || log.replacementProductId || "Product"}</strong> (Size: {log.replacementSize || log.replacementItem?.size}, Color: {log.replacementColor || log.replacementItem?.color || "Standard"}) × {log.qty || log.replacementItem?.qty || 1} unit</div>
+                            </div>
+                          ) : (
+                            <div className="flex flex-wrap gap-1.5 pt-0.5">
+                              {log.items?.map((it, iIdx) => (
+                                <span key={iIdx} className="bg-white text-red-900 text-[11px] px-2 py-1 rounded border border-red-200 font-semibold shadow-2xs">
+                                  {it.name || "Item"} ({it.size || "Free Size"}{it.color ? `, ${it.color}` : ""}) × {it.returnQty || it.qty || 1} returned unit(s)
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
             {/* Footer Action Buttons with Return & Replace */}
             <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-gray-200">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => handleReturnOrder(viewingOrder.orderNumber || viewingOrder.id)}
+                  onClick={() => {
+                    setShowOrderModal(false);
+                    handleOpenReturnModal(viewingOrder);
+                  }}
                   className="px-3.5 py-2 text-xs font-bold bg-red-50 text-red-700 hover:bg-red-100 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 border border-red-200"
                   title="Return items and restore stock to inventory"
                 >
@@ -3025,6 +3374,22 @@ export default function AdminPage() {
             </div>
 
             <form onSubmit={handleSubmitReplaceOrder} className="space-y-4 text-xs">
+              {/* Reason for Replacement */}
+              <div>
+                <label className="block font-bold text-gray-700 mb-1">Reason for Replacement / Exchange</label>
+                <select
+                  value={replaceForm.reason || "Size / Fitting Issue Exchange"}
+                  onChange={(e) => setReplaceForm({ ...replaceForm, reason: e.target.value })}
+                  className="w-full h-10 px-3 border border-gray-300 rounded-lg bg-white font-medium focus:outline-none focus:border-plum"
+                >
+                  <option value="Size / Fitting Issue Exchange">Size / Fitting Issue Exchange</option>
+                  <option value="Defective / Damaged Item Replacement">Defective / Damaged Item Replacement</option>
+                  <option value="Color / Design Preference Exchange">Color / Design Preference Exchange</option>
+                  <option value="Wrong Item Replacement">Wrong Item Replacement</option>
+                  <option value="Other Replacement Reason">Other Replacement Reason</option>
+                </select>
+              </div>
+
               {/* Select Item to Return */}
               <div>
                 <label className="block font-bold text-gray-700 mb-1">Select Returned Item (Stock will be restored +1)</label>
@@ -3116,6 +3481,190 @@ export default function AdminPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* RETURN ORDER QUANTITY SELECTOR MODAL */}
+      {showReturnModal && viewingOrder && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-line space-y-4 font-sans text-left">
+            <div className="flex items-center justify-between border-b border-gray-200 pb-3">
+              <div>
+                <h3 className="font-extrabold text-base text-gray-900">Process Return for Order #{viewingOrder.orderNumber || viewingOrder.id}</h3>
+                <p className="text-xs text-gray-500">Select items & return quantity to add back to product inventory stock.</p>
+              </div>
+              <button
+                onClick={() => setShowReturnModal(false)}
+                className="text-gray-400 hover:text-gray-600 cursor-pointer p-1 rounded-lg hover:bg-gray-100"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitReturn} className="space-y-4">
+              {/* Return Reason Selector */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">
+                  Reason for Return
+                </label>
+                <select
+                  value={returnReason}
+                  onChange={(e) => setReturnReason(e.target.value)}
+                  className="w-full px-3 py-2 text-xs font-semibold border border-gray-300 rounded-xl bg-white text-gray-900 focus:outline-none focus:border-plum"
+                >
+                  <option value="Size / Fitting Issue">Size / Fitting Issue</option>
+                  <option value="Damaged / Defective Item">Damaged / Defective Item</option>
+                  <option value="Color / Fabric Difference">Color / Fabric Difference</option>
+                  <option value="Customer Cancelled Order">Customer Cancelled Order</option>
+                  <option value="Wrong Item Delivered">Wrong Item Delivered</option>
+                  <option value="Other Reason">Other Reason</option>
+                </select>
+              </div>
+
+              <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+                {returnItemsState.map((item, idx) => (
+                  <div key={idx} className={`p-3 rounded-xl border transition-colors flex items-center justify-between gap-3 ${item.selected ? "border-plum bg-plum/5" : "border-gray-200 bg-gray-50 opacity-60"}`}>
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <input
+                        type="checkbox"
+                        checked={item.selected}
+                        onChange={(e) => {
+                          const val = e.target.checked;
+                          setReturnItemsState((prev) =>
+                            prev.map((it, i) => (i === idx ? { ...it, selected: val } : it))
+                          );
+                        }}
+                        className="w-4 h-4 rounded text-plum cursor-pointer shrink-0"
+                      />
+                      <img src={item.image || "/logo.png"} alt={item.name} className="w-10 h-12 object-cover rounded border border-gray-200 shrink-0" />
+                      <div className="min-w-0">
+                        <div className="font-bold text-xs text-gray-900 truncate">{item.name}</div>
+                        <div className="text-[11px] text-gray-500 font-medium">
+                          Size: <span className="font-semibold text-gray-800">{item.size}</span>
+                          {item.color ? <span> • Color: <span className="font-semibold text-gray-800">{item.color}</span></span> : null}
+                        </div>
+                        <div className="text-[11px] text-gray-400 font-mono">₹{item.price} (Ordered: {item.maxQty})</div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <label className="text-[10px] font-bold text-gray-500 uppercase">Return Qty</label>
+                      <select
+                        disabled={!item.selected}
+                        value={item.returnQty}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value, 10);
+                          setReturnItemsState((prev) =>
+                            prev.map((it, i) => (i === idx ? { ...it, returnQty: val } : it))
+                          );
+                        }}
+                        className="px-2.5 py-1 text-xs border border-gray-300 rounded-lg bg-white font-bold focus:outline-none focus:border-plum"
+                      >
+                        {Array.from({ length: item.maxQty }, (_, i) => i + 1).map((q) => (
+                          <option key={q} value={q}>
+                            {q} {q === 1 ? "unit" : "units"}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Total Summary */}
+              <div className="p-3 rounded-xl bg-gray-50 border border-gray-200 flex justify-between items-center text-xs">
+                <span className="font-semibold text-gray-600">Total Returned Stock Qty:</span>
+                <span className="font-extrabold text-plum text-sm">
+                  {returnItemsState.filter((i) => i.selected).reduce((sum, i) => sum + i.returnQty, 0)} units
+                </span>
+              </div>
+
+              <div className="flex justify-end gap-2.5 pt-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setShowReturnModal(false)}
+                  className="px-4 py-2.5 bg-gray-100 text-gray-700 hover:bg-gray-200 font-bold rounded-lg text-xs cursor-pointer transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 bg-plum text-white hover:bg-plum-900 font-bold rounded-lg text-xs cursor-pointer shadow-xs transition-colors flex items-center gap-1.5"
+                >
+                  <ArrowUDownLeft size={16} />
+                  <span>Confirm & Restore Stock</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* THEME DESIGNED ALERT / CONFIRM POPUP MODAL */}
+      {toastModal.open && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-200 space-y-4 font-sans text-left">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                {toastModal.type === "success" && (
+                  <div className="w-9 h-9 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 font-bold text-sm">
+                    ✓
+                  </div>
+                )}
+                {toastModal.type === "warning" && (
+                  <div className="w-9 h-9 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 font-bold text-sm">
+                    !
+                  </div>
+                )}
+                {(toastModal.type === "error" || toastModal.type === "confirm") && (
+                  <div className="w-9 h-9 rounded-full bg-plum/10 text-plum flex items-center justify-center shrink-0 font-bold text-sm">
+                    ?
+                  </div>
+                )}
+                <h3 className="font-extrabold text-base text-gray-900">{toastModal.title}</h3>
+              </div>
+              <button
+                onClick={() => setToastModal((prev) => ({ ...prev, open: false }))}
+                className="text-gray-400 hover:text-gray-600 cursor-pointer p-1 rounded-lg hover:bg-gray-100"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-xs sm:text-sm text-gray-700 leading-relaxed font-medium">
+              {toastModal.message}
+            </p>
+
+            <div className="flex justify-end gap-2.5 pt-2 border-t border-gray-100">
+              {toastModal.type === "confirm" ? (
+                <>
+                  <button
+                    onClick={() => setToastModal((prev) => ({ ...prev, open: false }))}
+                    className="px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 font-bold rounded-lg text-xs cursor-pointer transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      const action = toastModal.onConfirm;
+                      setToastModal((prev) => ({ ...prev, open: false }));
+                      if (action) action();
+                    }}
+                    className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 font-bold rounded-lg text-xs cursor-pointer shadow-xs transition-colors"
+                  >
+                    Confirm Action
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => setToastModal((prev) => ({ ...prev, open: false }))}
+                  className="px-5 py-2.5 bg-plum text-white hover:bg-plum-900 font-bold rounded-lg text-xs cursor-pointer shadow-xs transition-colors"
+                >
+                  OK, Understood
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -55,3 +55,23 @@
 .animate-section-scale {
   animation: sectionScaleUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* Continuous Marquee Scrolling Animation for Top Announcement Bar */
+@keyframes marqueeScroll {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marqueeScroll 22s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}

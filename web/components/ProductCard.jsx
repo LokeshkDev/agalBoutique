@@ -39,7 +39,7 @@ export default function ProductCard({ product, priority = false }) {
       <article className="group relative flex flex-col bg-white rounded-[5px] transition-shadow duration-200 hover:shadow-card p-1 sm:p-2">
         {/* Clickable Image Container */}
         <div className="relative aspect-[3/4] w-full rounded-[5px] overflow-hidden bg-gray-50">
-          <Link href={`/product/${slug}`} className="block w-full h-full">
+          <Link href={`/product/${slug}`} className="relative block w-full h-full">
             <Image
               src={mainImage}
               alt={images?.[0]?.alt || name}

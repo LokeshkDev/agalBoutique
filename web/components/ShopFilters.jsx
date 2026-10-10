@@ -64,14 +64,17 @@ export default function ShopFilters({ totalCount, categories }) {
     setSortSheetOpen(false);
   };
 
-  const activeFiltersCount = [currentSize, currentFabric, currentOccasion].filter(
-    Boolean
-  ).length;
+  const activeFiltersCount = [
+    currentCategory,
+    currentSize,
+    currentFabric,
+    currentOccasion,
+  ].filter(Boolean).length;
 
   return (
     <>
-      {/* Category Pills Header Row (Always visible & horizontally scrollable) */}
-      <div className="flex gap-2 overflow-x-auto no-scrollbar py-3">
+      {/* Category Pills Header Row (Desktop Only) */}
+      <div className="hidden lg:flex gap-2 overflow-x-auto no-scrollbar py-3">
         <button
           type="button"
           onClick={() => updateQuery({ category: "" })}
@@ -104,6 +107,35 @@ export default function ShopFilters({ totalCount, categories }) {
         })}
       </div>
 
+      {/* Mobile Top Control Bar (Sort & Filter buttons in place of Category buttons) */}
+      <div className="lg:hidden grid grid-cols-2 gap-3 py-2 my-2">
+        <button
+          type="button"
+          onClick={() => setSortSheetOpen(true)}
+          className="h-10 px-4 rounded-xl bg-[#fcf5f8] border border-[#f3e3ee] text-gray-900 text-xs font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-all cursor-pointer shadow-2xs"
+        >
+          <SortAscending size={18} weight="bold" className="text-plum" />
+          <span>Sort</span>
+          {currentSort !== "newest" && (
+            <span className="w-1.5 h-1.5 rounded-full bg-plum"></span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setFilterSheetOpen(true)}
+          className="h-10 px-4 rounded-xl bg-[#fcf5f8] border border-[#f3e3ee] text-gray-900 text-xs font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-all cursor-pointer shadow-2xs relative"
+        >
+          <SlidersHorizontal size={18} weight="bold" className="text-plum" />
+          <span>Filter</span>
+          {activeFiltersCount > 0 && (
+            <span className="w-5 h-5 rounded-full bg-crimson text-white text-[10px] font-extrabold grid place-items-center shadow-xs">
+              {activeFiltersCount}
+            </span>
+          )}
+        </button>
+      </div>
+
       {/* Desktop Top Control Bar (Sort Dropdown & Filter tags) */}
       <div className="hidden lg:flex items-center justify-between py-4 border-y border-line my-4">
         <div className="flex items-center gap-2 flex-wrap">
@@ -113,13 +145,25 @@ export default function ShopFilters({ totalCount, categories }) {
           {activeFiltersCount === 0 && (
             <span className="text-xs text-muted">None applied</span>
           )}
+          {currentCategory && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-plum-50 border border-plum text-xs text-plum font-medium">
+              Category: {categories.find((c) => c.slug === currentCategory)?.name || currentCategory}
+              <button
+                type="button"
+                onClick={() => updateQuery({ category: "" })}
+                className="hover:text-crimson cursor-pointer"
+              >
+                <X size={14} />
+              </button>
+            </span>
+          )}
           {currentFabric && (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-plum-50 border border-plum text-xs text-plum font-medium">
               Fabric: {currentFabric}
               <button
                 type="button"
                 onClick={() => updateQuery({ fabric: "" })}
-                className="hover:text-crimson"
+                className="hover:text-crimson cursor-pointer"
               >
                 <X size={14} />
               </button>
@@ -131,7 +175,7 @@ export default function ShopFilters({ totalCount, categories }) {
               <button
                 type="button"
                 onClick={() => updateQuery({ size: "" })}
-                className="hover:text-crimson"
+                className="hover:text-crimson cursor-pointer"
               >
                 <X size={14} />
               </button>
@@ -143,7 +187,7 @@ export default function ShopFilters({ totalCount, categories }) {
               <button
                 type="button"
                 onClick={() => updateQuery({ occasion: "" })}
-                className="hover:text-crimson"
+                className="hover:text-crimson cursor-pointer"
               >
                 <X size={14} />
               </button>
@@ -180,32 +224,7 @@ export default function ShopFilters({ totalCount, categories }) {
         </div>
       </div>
 
-      {/* Mobile Sticky Bottom Action Bar (Sort + Filter) */}
-      <div className="lg:hidden fixed bottom-16 left-0 right-0 z-40 bg-ivory border-t border-line shadow-sheet">
-        <div className="grid grid-cols-2 divide-x divide-line h-12">
-          <button
-            type="button"
-            onClick={() => setSortSheetOpen(true)}
-            className="flex items-center justify-center gap-2 text-xs font-semibold text-ink active:bg-plum-50"
-          >
-            <SortAscending size={18} weight="light" />
-            Sort
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilterSheetOpen(true)}
-            className="flex items-center justify-center gap-2 text-xs font-semibold text-ink active:bg-plum-50 relative"
-          >
-            <SlidersHorizontal size={18} weight="light" />
-            Filter
-            {activeFiltersCount > 0 && (
-              <span className="w-5 h-5 rounded-full bg-crimson text-white text-[10px] font-bold grid place-items-center">
-                {activeFiltersCount}
-              </span>
-            )}
-          </button>
-        </div>
-      </div>
+
 
       {/* Mobile Sort Sheet */}
       <Sheet
@@ -245,6 +264,39 @@ export default function ShopFilters({ totalCount, categories }) {
         title="Filters"
       >
         <div className="p-4 space-y-6">
+          {/* Category Group */}
+          {categories && categories.length > 0 && (
+            <div>
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted mb-3">
+                Category
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                <Chip
+                  variant="filter"
+                  selected={!currentCategory}
+                  onClick={() => updateQuery({ category: "" })}
+                >
+                  All Items
+                </Chip>
+                {categories.map((cat) => {
+                  const isSelected = currentCategory === cat.slug;
+                  return (
+                    <Chip
+                      key={cat.slug}
+                      variant="filter"
+                      selected={isSelected}
+                      onClick={() =>
+                        updateQuery({ category: isSelected ? "" : cat.slug })
+                      }
+                    >
+                      {cat.name}
+                    </Chip>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Size Group */}
           <div>
             <h4 className="text-xs font-semibold uppercase tracking-wider text-muted mb-3">
