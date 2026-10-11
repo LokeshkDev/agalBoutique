@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
@@ -22,6 +22,15 @@ import { getCmsSettings, getCategories } from "@/lib/api";
 import { categories as defaultCategories } from "@/lib/data/categories";
 import Sheet from "@/components/Sheet";
 import AnnouncementBar from "@/components/AnnouncementBar";
+
+const DEFAULT_QUICK_MENU = [
+  { id: "1", title: "All Collections", url: "/shop" },
+  { id: "2", title: "Sarees", url: "/shop?category=sarees" },
+  { id: "3", title: "Kurtis", url: "/shop?category=kurtis" },
+  { id: "4", title: "Full Sets", url: "/shop?category=full-sets" },
+  { id: "5", title: "About Us", url: "/about" },
+  { id: "6", title: "Contact", url: "/contact" },
+];
 
 const DEFAULT_MENU_ITEMS = [
   { title: "Popular", url: "/shop" },
@@ -45,12 +54,57 @@ export default function Header() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [searchParamsStr, setSearchParamsStr] = useState("");
+  const [headerQuickMenu, setHeaderQuickMenu] = useState(DEFAULT_QUICK_MENU);
   const [navMenuItems, setNavMenuItems] = useState(DEFAULT_MENU_ITEMS);
   const [categoriesList, setCategoriesList] = useState(defaultCategories);
   const [menuDrawerOpen, setMenuDrawerOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState(null);
   const [isScrolled, setIsScrolled] = useState(false);
+
+  // Storefront Desktop Nav Drag-to-Swipe
+  const desktopNavRef = useRef(null);
+  const [isDraggingDesktopNav, setIsDraggingDesktopNav] = useState(false);
+  const [navStartX, setNavStartX] = useState(0);
+  const [navScrollLeft, setNavScrollLeft] = useState(0);
+
+  const handleNavMouseDown = (e) => {
+    if (!desktopNavRef.current) return;
+    setIsDraggingDesktopNav(true);
+    setNavStartX(e.pageX - desktopNavRef.current.offsetLeft);
+    setNavScrollLeft(desktopNavRef.current.scrollLeft);
+  };
+  const handleNavMouseLeave = () => setIsDraggingDesktopNav(false);
+  const handleNavMouseUp = () => setIsDraggingDesktopNav(false);
+  const handleNavMouseMove = (e) => {
+    if (!isDraggingDesktopNav || !desktopNavRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - desktopNavRef.current.offsetLeft;
+    const walk = (x - navStartX) * 1.5;
+    desktopNavRef.current.scrollLeft = navScrollLeft - walk;
+  };
+
+  // Storefront Mobile Nav Drag-to-Swipe
+  const mobileNavRef = useRef(null);
+  const [isDraggingMobileNav, setIsDraggingMobileNav] = useState(false);
+  const [mobStartX, setMobStartX] = useState(0);
+  const [mobScrollLeft, setMobScrollLeft] = useState(0);
+
+  const handleMobMouseDown = (e) => {
+    if (!mobileNavRef.current) return;
+    setIsDraggingMobileNav(true);
+    setMobStartX(e.pageX - mobileNavRef.current.offsetLeft);
+    setMobScrollLeft(mobileNavRef.current.scrollLeft);
+  };
+  const handleMobMouseLeave = () => setIsDraggingMobileNav(false);
+  const handleMobMouseUp = () => setIsDraggingMobileNav(false);
+  const handleMobMouseMove = (e) => {
+    if (!isDraggingMobileNav || !mobileNavRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - mobileNavRef.current.offsetLeft;
+    const walk = (x - mobStartX) * 1.5;
+    mobileNavRef.current.scrollLeft = mobScrollLeft - walk;
+  };
 
   useEffect(() => {
     setSearchParamsStr(window.location.search || "");
@@ -66,14 +120,21 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
-    // 1. Fetch CMS navigation menu
+    // 1. Fetch CMS navigation menus
     getCmsSettings().then((res) => {
-      if (
-        res?.settings?.header_nav_menu &&
-        Array.isArray(res.settings.header_nav_menu) &&
-        res.settings.header_nav_menu.length > 0
-      ) {
-        setNavMenuItems(res.settings.header_nav_menu);
+      let rawQuick = res?.settings?.header_quick_menu;
+      if (typeof rawQuick === "string") {
+        try { rawQuick = JSON.parse(rawQuick); } catch (e) {}
+      }
+      if (Array.isArray(rawQuick) && rawQuick.length > 0) {
+        setHeaderQuickMenu(rawQuick);
+      }
+      let rawNav = res?.settings?.header_nav_menu;
+      if (typeof rawNav === "string") {
+        try { rawNav = JSON.parse(rawNav); } catch (e) {}
+      }
+      if (Array.isArray(rawNav) && rawNav.length > 0) {
+        setNavMenuItems(rawNav);
       }
     });
 
@@ -162,27 +223,46 @@ export default function Header() {
           />
         </Link>
 
-        {/* Desktop Quick Nav Links (Centered) */}
-        <div className="hidden lg:flex items-center gap-6 text-xs sm:text-sm font-semibold text-gray-600">
-          <Link href="/shop" className="hover:text-plum transition-colors font-bold text-gray-900">
-            All Collections
-          </Link>
-          <Link href="/shop?category=sarees" className="hover:text-plum transition-colors">
-            Sarees
-          </Link>
-          <Link href="/shop?category=kurtis" className="hover:text-plum transition-colors">
-            Kurtis
-          </Link>
-          <Link href="/shop?category=full-sets" className="hover:text-plum transition-colors">
-            Full Sets
-          </Link>
-          <Link href="/about" className="hover:text-plum transition-colors">
-            About Us
-          </Link>
-          <Link href="/contact" className="hover:text-plum transition-colors">
-            Contact
-          </Link>
-        </div>
+        {/* Desktop Quick Nav Links (Horizontal swipe/scroll without visible scrollbar) */}
+        <nav
+          ref={desktopNavRef}
+          onMouseDown={handleNavMouseDown}
+          onMouseMove={handleNavMouseMove}
+          onMouseUp={handleNavMouseUp}
+          onMouseLeave={handleNavMouseLeave}
+          onWheel={(e) => {
+            if (e.deltaY !== 0 && desktopNavRef.current) {
+              desktopNavRef.current.scrollLeft += e.deltaY;
+            }
+          }}
+          aria-label="Header Navigation Menu"
+          className="hidden lg:flex items-center overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap max-w-[48vw] xl:max-w-[56vw] py-1 px-1 select-none cursor-grab active:cursor-grabbing touch-pan-x"
+        >
+          <ul className="flex items-center gap-5 xl:gap-7 shrink-0 text-xs sm:text-sm font-semibold text-gray-700">
+            {headerQuickMenu.map((item, idx) => {
+              const itemUrl = item.url || "/shop";
+              const currentFullUrl = pathname + searchParamsStr;
+              const isActive =
+                itemUrl === "/shop"
+                  ? pathname === "/shop" && !searchParamsStr
+                  : currentFullUrl === itemUrl || (itemUrl !== "/" && currentFullUrl.startsWith(itemUrl));
+              return (
+                <li key={item.id || idx} className="shrink-0">
+                  <Link
+                    href={itemUrl}
+                    className={`transition-colors py-1 block cursor-pointer ${
+                      isActive
+                        ? "text-plum font-bold border-b-2 border-plum"
+                        : "text-gray-700 hover:text-plum font-medium"
+                    }`}
+                  >
+                    {item.title}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
 
         {/* Right Side: Search Icon Button (BEFORE the Bag) + Bag/Cart Icon */}
         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 z-20">
@@ -221,6 +301,46 @@ export default function Header() {
             <span className="hidden md:inline text-xs font-semibold font-sans">Bag</span>
           </button>
         </div>
+      </div>
+
+      {/* Mobile/Tablet Swipeable Header Menu Bar (< lg) */}
+      <div
+        ref={mobileNavRef}
+        onMouseDown={handleMobMouseDown}
+        onMouseMove={handleMobMouseMove}
+        onMouseUp={handleMobMouseUp}
+        onMouseLeave={handleMobMouseLeave}
+        onWheel={(e) => {
+          if (e.deltaY !== 0 && mobileNavRef.current) {
+            mobileNavRef.current.scrollLeft += e.deltaY;
+          }
+        }}
+        className="lg:hidden w-full border-t border-gray-200/60 bg-white/95 backdrop-blur-xs overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap px-3 sm:px-4 py-2 select-none cursor-grab active:cursor-grabbing touch-pan-x"
+      >
+        <ul className="flex items-center gap-2 shrink-0 text-xs font-semibold text-gray-700">
+          {headerQuickMenu.map((item, idx) => {
+            const itemUrl = item.url || "/shop";
+            const currentFullUrl = pathname + searchParamsStr;
+            const isActive =
+              itemUrl === "/shop"
+                ? pathname === "/shop" && !searchParamsStr
+                : currentFullUrl === itemUrl || (itemUrl !== "/" && currentFullUrl.startsWith(itemUrl));
+            return (
+              <li key={item.id || idx} className="shrink-0">
+                <Link
+                  href={itemUrl}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all inline-block ${
+                    isActive
+                      ? "bg-plum text-white shadow-2xs"
+                      : "bg-[#FAF7F2] text-gray-700 border border-gray-200 hover:border-plum hover:text-plum"
+                  }`}
+                >
+                  {item.title}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
       </div>
 
       {/* Expandable Search Input Bar (Desktop & Mobile) */}

@@ -30,6 +30,15 @@ export default function QuickViewModal({ product, open, onClose }) {
   const [sizeError, setSizeError] = useState(false);
   const [addedSuccess, setAddedSuccess] = useState(false);
   const [stockAlert, setStockAlert] = useState({ open: false, title: "", message: "" });
+  const [modalImgSrc, setModalImgSrc] = useState("");
+
+  const currentImg = normalizeImageUrl(product?.images?.[selectedImgIdx] || product?.images?.[0]);
+
+  useEffect(() => {
+    if (open && product) {
+      setModalImgSrc(currentImg);
+    }
+  }, [open, product, currentImg]);
 
   useEffect(() => {
     if (open) {
@@ -51,6 +60,7 @@ export default function QuickViewModal({ product, open, onClose }) {
       setSelectedSize(initSize);
       setSelectedColor(product?.colors?.[0] || "");
       setSelectedImgIdx(0);
+      setModalImgSrc(normalizeImageUrl(product?.images?.[0]));
       setQty(1);
       setSizeError(false);
       setAddedSuccess(false);
@@ -59,15 +69,9 @@ export default function QuickViewModal({ product, open, onClose }) {
 
   const addItem = useCart((s) => s.add);
 
-  if (!open || !product || !mounted) return null;
+  if (!open || !product || !mounted || typeof document === "undefined") return null;
 
   const discount = discountPercent(product.price, product.mrp);
-  const currentImg = normalizeImageUrl(product.images?.[selectedImgIdx] || product.images?.[0]);
-  const [modalImgSrc, setModalImgSrc] = useState(currentImg);
-
-  useEffect(() => {
-    setModalImgSrc(currentImg);
-  }, [currentImg]);
 
   // Stock calculation for selected size & color
   const selectedVariant = product?.sizes?.find(

@@ -159,10 +159,10 @@ export default function ShopFilters({ totalCount, categories = [], categoryName 
         </div>
       </div>
 
-      {/* Mobile Top Header & Control Bar */}
-      <div className="lg:hidden mb-2">
-        <div className="flex items-baseline justify-between mb-2">
-          <h1 className="text-xl font-black text-gray-900 tracking-tight">
+      {/* Mobile Top Header & Control Bar (Sticky when scrolling products) */}
+      <div className="lg:hidden mb-3 sticky top-[56px] z-30 bg-white/95 backdrop-blur-md py-2 -mx-4 px-4 sm:-mx-6 sm:px-6 border-b border-gray-100 shadow-2xs">
+        <div className="flex items-baseline justify-between mb-1.5">
+          <h1 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight">
             {categoryName || "All Collections"}
           </h1>
           <span className="text-xs text-gray-500 font-bold">
@@ -170,7 +170,7 @@ export default function ShopFilters({ totalCount, categories = [], categoryName 
           </span>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 py-1">
+        <div className="grid grid-cols-2 gap-2.5">
           <button
             type="button"
             onClick={() => setSortSheetOpen(true)}
@@ -207,7 +207,12 @@ export default function ShopFilters({ totalCount, categories = [], categoryName 
           </span>
           {currentCategory && (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 border border-purple-200 text-xs text-plum font-semibold">
-              Category: {categories.find((c) => c.slug === currentCategory)?.name || currentCategory}
+              Category:{" "}
+              {categories.find(
+                (c) =>
+                  c.slug?.toLowerCase() === currentCategory.toLowerCase() ||
+                  c.name?.toLowerCase() === currentCategory.toLowerCase()
+              )?.name || currentCategory}
               <button
                 type="button"
                 onClick={() => updateQuery({ category: "", subcategory: "" })}
@@ -285,6 +290,7 @@ export default function ShopFilters({ totalCount, categories = [], categoryName 
         open={sortSheetOpen}
         onClose={() => setSortSheetOpen(false)}
         title="Sort By"
+        side="bottom"
       >
         <div className="p-4 space-y-1">
           {SORT_OPTIONS.map((opt) => {
@@ -349,7 +355,12 @@ export default function ShopFilters({ totalCount, categories = [], categoryName 
                   All Items
                 </button>
                 {categories.map((cat) => {
-                  const isSelected = currentCategory.toLowerCase() === cat.slug?.toLowerCase();
+                  const isSelected =
+                    Boolean(currentCategory) &&
+                    (currentCategory.toLowerCase() === cat.slug?.toLowerCase() ||
+                      currentCategory.toLowerCase() === cat.name?.toLowerCase() ||
+                      currentCategory.toLowerCase().replace(/[^a-z0-9]/g, "") ===
+                        (cat.slug || cat.name || "").toLowerCase().replace(/[^a-z0-9]/g, ""));
                   return (
                     <button
                       key={cat.slug || cat.id}

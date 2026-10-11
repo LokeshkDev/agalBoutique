@@ -66,7 +66,11 @@ export default async function ShopPage({ searchParams }) {
   const totalPages = Math.ceil(total / limit) || 1;
 
   const categoryName = category
-    ? categoriesList.find((c) => c.slug === category)?.name || category
+    ? categoriesList.find(
+        (c) =>
+          c.slug?.toLowerCase() === category.toLowerCase() ||
+          c.name?.toLowerCase() === category.toLowerCase()
+      )?.name || category
     : "All Collections";
 
   const itemListSchema = {

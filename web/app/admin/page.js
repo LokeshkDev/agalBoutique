@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Fragment } from "react";
+import React, { useState, useEffect, useRef, Fragment } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -25,6 +25,7 @@ import {
   CaretLeft,
   CaretRight,
   CaretDown,
+  CaretUp,
   List,
   ArrowUDownLeft,
   ArrowsClockwise,
@@ -491,6 +492,14 @@ export default function AdminPage() {
         enabled: true,
       },
     },
+    header_quick_menu: [
+      { id: "1", title: "All Collections", url: "/shop" },
+      { id: "2", title: "Sarees", url: "/shop?category=sarees" },
+      { id: "3", title: "Kurtis", url: "/shop?category=kurtis" },
+      { id: "4", title: "Full Sets", url: "/shop?category=full-sets" },
+      { id: "5", title: "About Us", url: "/about" },
+      { id: "6", title: "Contact", url: "/contact" },
+    ],
     header_nav_menu: [
       { title: "Popular", url: "/shop" },
       { title: "Sarees & Handlooms", url: "/shop?category=sarees" },
@@ -551,6 +560,33 @@ export default function AdminPage() {
   const [cmsSaveStatus, setCmsSaveStatus] = useState("");
   const [cmsSubTab, setCmsSubTab] = useState("banners");
   const [deliverySubTab, setDeliverySubTab] = useState("online");
+
+  // CMS Sub-Tabs Swipe / Drag & Scroll States
+  const cmsTabsRef = useRef(null);
+  const [isDraggingCmsTabs, setIsDraggingCmsTabs] = useState(false);
+  const [tabsStartX, setTabsStartX] = useState(0);
+  const [tabsScrollLeft, setTabsScrollLeft] = useState(0);
+
+  const handleCmsTabsMouseDown = (e) => {
+    if (!cmsTabsRef.current) return;
+    setIsDraggingCmsTabs(true);
+    setTabsStartX(e.pageX - cmsTabsRef.current.offsetLeft);
+    setTabsScrollLeft(cmsTabsRef.current.scrollLeft);
+  };
+  const handleCmsTabsMouseLeave = () => setIsDraggingCmsTabs(false);
+  const handleCmsTabsMouseUp = () => setIsDraggingCmsTabs(false);
+  const handleCmsTabsMouseMove = (e) => {
+    if (!isDraggingCmsTabs || !cmsTabsRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - cmsTabsRef.current.offsetLeft;
+    const walk = (x - tabsStartX) * 1.5;
+    cmsTabsRef.current.scrollLeft = tabsScrollLeft - walk;
+  };
+  const scrollCmsTabs = (direction) => {
+    if (!cmsTabsRef.current) return;
+    const scrollAmount = direction === "left" ? -240 : 240;
+    cmsTabsRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
+  };
 
   // Product Search, Filter, Bulk Select & View Modal States
   const [productSearch, setProductSearch] = useState("");
@@ -669,6 +705,16 @@ export default function AdminPage() {
     }
   }, []);
 
+  // Auto-scroll active CMS sub-tab into view when switched
+  useEffect(() => {
+    if (activeTab === "cms" && cmsTabsRef.current) {
+      const activeEl = cmsTabsRef.current.querySelector('[data-active-tab="true"]');
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+      }
+    }
+  }, [cmsSubTab, activeTab]);
+
   const loadAllData = async () => {
     try {
       const statsRes = await adminGetStats();
@@ -684,7 +730,23 @@ export default function AdminPage() {
       if (catsRes?.categories) setCategoriesList(catsRes.categories);
 
       const cmsRes = await getCmsSettings();
-      if (cmsRes?.settings) setCms((prev) => ({ ...prev, ...cmsRes.settings }));
+      if (cmsRes?.settings) {
+        let incoming = { ...cmsRes.settings };
+        if (typeof incoming.header_quick_menu === "string") {
+          try { incoming.header_quick_menu = JSON.parse(incoming.header_quick_menu); } catch (e) {}
+        }
+        if (!Array.isArray(incoming.header_quick_menu) || incoming.header_quick_menu.length === 0) {
+          incoming.header_quick_menu = [
+            { id: "1", title: "All Collections", url: "/shop" },
+            { id: "2", title: "Sarees", url: "/shop?category=sarees" },
+            { id: "3", title: "Kurtis", url: "/shop?category=kurtis" },
+            { id: "4", title: "Full Sets", url: "/shop?category=full-sets" },
+            { id: "5", title: "About Us", url: "/about" },
+            { id: "6", title: "Contact", url: "/contact" },
+          ];
+        }
+        setCms((prev) => ({ ...prev, ...incoming }));
+      }
     } catch (e) {
       console.error("Error loading admin data:", e);
     }
@@ -1472,14 +1534,31 @@ export default function AdminPage() {
             </button>
 
             <button
-              onClick={() => setActiveTab("cms")}
+              onClick={() => {
+                setActiveTab("cms");
+                if (cmsSubTab === "header_quick_menu") setCmsSubTab("banners");
+              }}
               className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm sm:text-base font-bold transition-all cursor-pointer ${
-                activeTab === "cms" ? "bg-plum text-white shadow-xs" : "text-gray-600 hover:bg-gray-100"
+                activeTab === "cms" && cmsSubTab !== "header_quick_menu" ? "bg-plum text-white shadow-xs" : "text-gray-600 hover:bg-gray-100"
               }`}
               title="Homepage CMS"
             >
               <Sliders size={22} className="shrink-0" />
               {sidebarOpen && <span>Storefront CMS</span>}
+            </button>
+
+            <button
+              onClick={() => {
+                setActiveTab("cms");
+                setCmsSubTab("header_quick_menu");
+              }}
+              className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm sm:text-base font-bold transition-all cursor-pointer ${
+                activeTab === "cms" && cmsSubTab === "header_quick_menu" ? "bg-plum text-white shadow-xs" : "text-gray-600 hover:bg-gray-100"
+              }`}
+              title="Header Menu"
+            >
+              <NavigationArrow size={22} className="shrink-0" />
+              {sidebarOpen && <span>Header Menu</span>}
             </button>
 
             <button
@@ -2415,42 +2494,81 @@ export default function AdminPage() {
               )}
             </div>
 
-            {/* THEME-DESIGNED CMS SUB-TABS NAVIGATION BAR */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-gray-100 no-scrollbar">
-              {[
-                { id: "banners", label: "Hero Banners", icon: ImageSquare, count: (cms.hero_slides || []).length },
-                { id: "announcement", label: "Announcement Bar", icon: Megaphone },
-                { id: "header_menu", label: "Header Nav Menu", icon: NavigationArrow, count: (cms.header_nav_menu || []).length },
-                { id: "about_us", label: "About Us Page", icon: BookOpen },
-                { id: "contact_us", label: "Contact Us & Store", icon: PhoneCall },
-              ].map((tab) => {
-                const isActive = cmsSubTab === tab.id;
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => setCmsSubTab(tab.id)}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all cursor-pointer ${
-                      isActive
-                        ? "bg-plum text-white shadow-sm ring-2 ring-purple-300"
-                        : "bg-purple-50/70 text-purple-950 hover:bg-purple-100 border border-purple-200/60"
-                    }`}
-                  >
-                    <Icon size={18} weight={isActive ? "fill" : "bold"} />
-                    <span>{tab.label}</span>
-                    {tab.count !== undefined && (
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full font-extrabold ${
-                          isActive ? "bg-white/20 text-white" : "bg-plum/10 text-plum"
-                        }`}
-                      >
-                        {tab.count}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+            {/* THEME-DESIGNED CMS SUB-TABS NAVIGATION BAR (SWIPEABLE WITH ARROWS & MOUSE DRAG) */}
+            <div className="relative flex items-center gap-1.5 pb-2 border-b border-gray-100">
+              {/* Left Scroll Button */}
+              <button
+                type="button"
+                onClick={() => scrollCmsTabs("left")}
+                aria-label="Scroll tabs left"
+                className="hidden sm:flex items-center justify-center w-8 h-8 rounded-full bg-white border border-gray-200 text-gray-700 hover:bg-purple-50 hover:text-plum shadow-2xs transition-colors shrink-0 cursor-pointer"
+                title="Scroll Left"
+              >
+                <CaretLeft size={16} weight="bold" />
+              </button>
+
+              {/* Swipeable Tabs Container */}
+              <div
+                ref={cmsTabsRef}
+                onMouseDown={handleCmsTabsMouseDown}
+                onMouseMove={handleCmsTabsMouseMove}
+                onMouseUp={handleCmsTabsMouseUp}
+                onMouseLeave={handleCmsTabsMouseLeave}
+                onWheel={(e) => {
+                  if (e.deltaY !== 0 && cmsTabsRef.current) {
+                    cmsTabsRef.current.scrollLeft += e.deltaY;
+                  }
+                }}
+                className="flex-1 flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap py-1 select-none cursor-grab active:cursor-grabbing touch-pan-x"
+              >
+                {[
+                  { id: "banners", label: "Hero Banners", icon: ImageSquare, count: (cms.hero_slides || []).length },
+                  { id: "announcement", label: "Announcement Bar", icon: Megaphone },
+                  { id: "header_quick_menu", label: "Header Top Menu (Swipeable)", icon: NavigationArrow, count: (cms.header_quick_menu || []).length },
+                  { id: "header_menu", label: "Category Sub-Nav Menu", icon: List, count: (cms.header_nav_menu || []).length },
+                  { id: "about_us", label: "About Us Page", icon: BookOpen },
+                  { id: "contact_us", label: "Contact Us & Store", icon: PhoneCall },
+                ].map((tab) => {
+                  const isActive = cmsSubTab === tab.id;
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      data-active-tab={isActive ? "true" : "false"}
+                      onClick={() => setCmsSubTab(tab.id)}
+                      className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all cursor-pointer shrink-0 ${
+                        isActive
+                          ? "bg-plum text-white shadow-sm ring-2 ring-purple-300"
+                          : "bg-purple-50/70 text-purple-950 hover:bg-purple-100 border border-purple-200/60"
+                      }`}
+                    >
+                      <Icon size={18} weight={isActive ? "fill" : "bold"} />
+                      <span>{tab.label}</span>
+                      {tab.count !== undefined && (
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full font-extrabold ${
+                            isActive ? "bg-white/20 text-white" : "bg-plum/10 text-plum"
+                          }`}
+                        >
+                          {tab.count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Right Scroll Button */}
+              <button
+                type="button"
+                onClick={() => scrollCmsTabs("right")}
+                aria-label="Scroll tabs right"
+                className="hidden sm:flex items-center justify-center w-8 h-8 rounded-full bg-white border border-gray-200 text-gray-700 hover:bg-purple-50 hover:text-plum shadow-2xs transition-colors shrink-0 cursor-pointer"
+                title="Scroll Right"
+              >
+                <CaretRight size={16} weight="bold" />
+              </button>
             </div>
 
             {/* SUB-TAB 1: HERO CAROUSEL BANNERS */}
@@ -2739,6 +2857,198 @@ export default function AdminPage() {
                   >
                     <Megaphone size={18} />
                     <span>Save Announcement Bar to DB</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* SUB-TAB: HEADER TOP QUICK MENU (SWIPEABLE) */}
+            {cmsSubTab === "header_quick_menu" && (
+              <div className="space-y-6 animate-fade-in max-w-4xl">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-purple-50/60 border border-purple-200/60 p-4 rounded-xl">
+                  <div>
+                    <h3 className="text-base font-bold text-plum flex items-center gap-2">
+                      <NavigationArrow size={20} weight="bold" />
+                      <span>Header Menu Links (Horizontal Swipeable) ({ (cms.header_quick_menu || []).length })</span>
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-0.5">
+                      Top header navigation links displayed next to the logo. Swipe horizontally like mobile tabs, with the scrollbar cleanly hidden.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const currentMenu = Array.isArray(cms.header_quick_menu) ? cms.header_quick_menu : [];
+                      const updated = [...currentMenu, { id: Date.now().toString(), title: "New Collection", url: "/shop" }];
+                      setCms({ ...cms, header_quick_menu: updated });
+                    }}
+                    className="px-4 py-2.5 bg-emerald-700 text-white text-sm font-bold rounded-xl hover:bg-emerald-800 transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs shrink-0 self-start sm:self-auto"
+                  >
+                    <Plus size={16} weight="bold" />
+                    <span>Add Menu Link</span>
+                  </button>
+                </div>
+
+                {/* LIVE STOREFRONT SWIPE PREVIEW */}
+                <div className="p-4 bg-white border border-gray-200 rounded-2xl shadow-xs space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+                      <Sparkle size={14} className="text-plum" weight="fill" />
+                      Live Header Bar Swipe Preview (Drag or Scroll horizontally)
+                    </span>
+                    <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      Hidden Scrollbar Active
+                    </span>
+                  </div>
+                  <div className="p-3 bg-gray-50/70 border border-gray-100 rounded-xl overflow-hidden">
+                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap py-1">
+                      {(Array.isArray(cms.header_quick_menu) ? cms.header_quick_menu : []).map((item, idx) => (
+                        <div
+                          key={item.id || idx}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-lg shadow-2xs hover:border-plum transition-colors cursor-default shrink-0"
+                        >
+                          <span className="text-plum font-extrabold">{idx + 1}.</span>
+                          <span>{item.title || "Untitled"}</span>
+                          <span className="text-[10px] text-gray-400 font-mono">({item.url || "/"})</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* EDITABLE ITEMS LIST */}
+                <div className="space-y-3">
+                  {(Array.isArray(cms.header_quick_menu) ? cms.header_quick_menu : []).map((item, mIdx) => {
+                    const menuList = cms.header_quick_menu || [];
+                    return (
+                      <div key={item.id || mIdx} className="p-4 bg-gray-50 border border-gray-200 rounded-2xl flex flex-col sm:flex-row items-center gap-3">
+                        {/* Order Reorder Controls */}
+                        <div className="flex items-center gap-1 self-start sm:self-center shrink-0">
+                          <button
+                            type="button"
+                            disabled={mIdx === 0}
+                            onClick={() => {
+                              if (mIdx === 0) return;
+                              const updated = [...menuList];
+                              const temp = updated[mIdx - 1];
+                              updated[mIdx - 1] = updated[mIdx];
+                              updated[mIdx] = temp;
+                              setCms({ ...cms, header_quick_menu: updated });
+                            }}
+                            className={`p-1.5 rounded-lg border text-gray-600 transition-colors ${
+                              mIdx === 0 ? "opacity-30 cursor-not-allowed border-gray-200" : "hover:bg-purple-100 hover:text-plum border-gray-300 cursor-pointer"
+                            }`}
+                            title="Move Left / Earlier"
+                          >
+                            <CaretUp size={16} weight="bold" />
+                          </button>
+                          <span className="text-xs font-black text-plum px-1.5 min-w-[20px] text-center">
+                            #{mIdx + 1}
+                          </span>
+                          <button
+                            type="button"
+                            disabled={mIdx === menuList.length - 1}
+                            onClick={() => {
+                              if (mIdx === menuList.length - 1) return;
+                              const updated = [...menuList];
+                              const temp = updated[mIdx + 1];
+                              updated[mIdx + 1] = updated[mIdx];
+                              updated[mIdx] = temp;
+                              setCms({ ...cms, header_quick_menu: updated });
+                            }}
+                            className={`p-1.5 rounded-lg border text-gray-600 transition-colors ${
+                              mIdx === menuList.length - 1 ? "opacity-30 cursor-not-allowed border-gray-200" : "hover:bg-purple-100 hover:text-plum border-gray-300 cursor-pointer"
+                            }`}
+                            title="Move Right / Later"
+                          >
+                            <CaretDown size={16} weight="bold" />
+                          </button>
+                        </div>
+
+                        {/* Title & URL Inputs */}
+                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+                          <div>
+                            <label className="block text-xs font-bold text-gray-700 mb-1">Menu Label / Title</label>
+                            <input
+                              type="text"
+                              value={item.title || ""}
+                              onChange={(e) => {
+                                const updated = [...menuList];
+                                updated[mIdx] = { ...updated[mIdx], title: e.target.value };
+                                setCms({ ...cms, header_quick_menu: updated });
+                              }}
+                              className="w-full h-10 px-3 text-sm border border-gray-300 rounded-xl focus:outline-none focus:border-plum font-semibold bg-white"
+                              placeholder="e.g. Sarees"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-gray-700 mb-1">Target Link URL</label>
+                            <input
+                              type="text"
+                              value={item.url || ""}
+                              onChange={(e) => {
+                                const updated = [...menuList];
+                                updated[mIdx] = { ...updated[mIdx], url: e.target.value };
+                                setCms({ ...cms, header_quick_menu: updated });
+                              }}
+                              className="w-full h-10 px-3 text-sm border border-gray-300 rounded-xl focus:outline-none focus:border-plum font-mono text-plum bg-white"
+                              placeholder="e.g. /shop?category=sarees"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Remove Button */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = menuList.filter((_, i) => i !== mIdx);
+                            setCms({ ...cms, header_quick_menu: updated });
+                          }}
+                          className="p-2.5 text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer shrink-0"
+                          title="Remove Menu Item"
+                        >
+                          <Trash size={18} />
+                        </button>
+                      </div>
+                    );
+                  })}
+
+                  {/* Empty Fallback Card if array is empty */}
+                  {((Array.isArray(cms.header_quick_menu) ? cms.header_quick_menu : []).length === 0) && (
+                    <div className="p-8 bg-gray-50 border-2 border-dashed border-purple-200 rounded-2xl text-center space-y-3">
+                      <p className="text-sm font-bold text-gray-700">No header menu links currently configured.</p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCms({
+                            ...cms,
+                            header_quick_menu: [
+                              { id: "1", title: "All Collections", url: "/shop" },
+                              { id: "2", title: "Sarees", url: "/shop?category=sarees" },
+                              { id: "3", title: "Kurtis", url: "/shop?category=kurtis" },
+                              { id: "4", title: "Full Sets", url: "/shop?category=full-sets" },
+                              { id: "5", title: "About Us", url: "/about" },
+                              { id: "6", title: "Contact", url: "/contact" },
+                            ],
+                          });
+                        }}
+                        className="px-5 py-2.5 bg-plum text-white text-xs font-bold rounded-xl hover:bg-plum-900 transition-colors shadow-xs cursor-pointer inline-flex items-center gap-2"
+                      >
+                        <Plus size={16} weight="bold" />
+                        <span>Restore Default 6 Header Links</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => handleSaveCms("header_quick_menu", cms.header_quick_menu)}
+                    className="px-6 py-3 bg-plum text-white text-sm font-bold rounded-xl hover:bg-plum-900 transition-colors cursor-pointer shadow-md flex items-center gap-2"
+                  >
+                    <NavigationArrow size={18} />
+                    <span>Save Header Menu to Database</span>
                   </button>
                 </div>
               </div>

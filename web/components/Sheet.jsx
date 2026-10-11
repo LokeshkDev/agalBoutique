@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useState } from "react";
+import { createPortal } from "react-dom";
 import { X } from "@phosphor-icons/react";
 
 export default function Sheet({ open, onClose, title, side = "right", children }) {
@@ -70,11 +71,31 @@ export default function Sheet({ open, onClose, title, side = "right", children }
     };
   }, [open, handleKeyDown]);
 
-  if (!mounted) return null;
+  if (!mounted || typeof document === "undefined") return null;
 
   const isLeft = side === "left";
+  const isBottom = side === "bottom";
 
-  return (
+  const getPositionClasses = () => {
+    if (isLeft) {
+      return `inset-y-0 left-0 right-auto w-[85vw] max-w-[380px] sm:w-[420px] h-full ${
+        visible ? "translate-x-0" : "-translate-x-full"
+      }`;
+    }
+    if (isBottom) {
+      return `inset-x-0 bottom-0 max-h-[85vh] rounded-t-[24px] sm:max-w-md sm:mx-auto sm:mb-6 sm:rounded-[24px] sm:border sm:border-gray-200 ${
+        visible ? "translate-y-0" : "translate-y-full"
+      }`;
+    }
+    // Default right drawer (becomes bottom sheet on small mobile screens < 768px)
+    return `inset-x-0 bottom-0 max-h-[88vh] rounded-t-[20px] md:rounded-none md:max-h-none md:inset-y-0 md:right-0 md:left-auto md:w-[440px] md:h-full ${
+      visible
+        ? "translate-y-0 md:translate-y-0 md:translate-x-0"
+        : "translate-y-full md:translate-y-0 md:translate-x-full"
+    }`;
+  };
+
+  return createPortal(
     <div
       className="fixed inset-0 z-[100]"
       role="dialog"
@@ -93,24 +114,12 @@ export default function Sheet({ open, onClose, title, side = "right", children }
       {/* Drawer / Bottom Sheet Container */}
       <div
         ref={sheetRef}
-        className={`fixed ${
-          isLeft
-            ? "inset-y-0 left-0 right-auto w-[85vw] max-w-[380px] sm:w-[420px] h-full"
-            : "inset-x-0 bottom-0 max-h-[88vh] rounded-t-[20px] md:rounded-none md:max-h-none md:inset-y-0 md:right-0 md:left-auto md:w-[440px] md:h-full"
-        } bg-white text-gray-900 flex flex-col shadow-2xl z-10 transition-transform duration-250 ease-out ${
-          visible
-            ? isLeft
-              ? "translate-x-0"
-              : "translate-y-0 md:translate-y-0 md:translate-x-0"
-            : isLeft
-            ? "-translate-x-full"
-            : "translate-y-full md:translate-y-0 md:translate-x-full"
-        }`}
+        className={`fixed bg-white text-gray-900 flex flex-col shadow-2xl z-10 transition-transform duration-250 ease-out ${getPositionClasses()}`}
       >
-        {/* Mobile drag handle (only for bottom sheet on right side) */}
+        {/* Mobile drag handle (for bottom sheets) */}
         {!isLeft && (
           <div
-            className="md:hidden flex justify-center pt-3 pb-1"
+            className={`${isBottom ? "flex" : "md:hidden flex"} justify-center pt-3 pb-1`}
             aria-hidden="true"
           >
             <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
@@ -140,6 +149,7 @@ export default function Sheet({ open, onClose, title, side = "right", children }
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

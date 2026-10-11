@@ -43,14 +43,18 @@ export async function getProducts(req, res) {
       // Fallback in-memory filter when DB connection is not configured locally
       let filtered = [...seedProducts];
       if (category) {
-        filtered = filtered.filter(
-          (p) => p.category?.toLowerCase() === category.toLowerCase()
-        );
+        const catNorm = category.toLowerCase().replace(/[^a-z0-9]/g, "");
+        filtered = filtered.filter((p) => {
+          const pNorm = (p.category || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+          return pNorm === catNorm || p.category?.toLowerCase() === category.toLowerCase();
+        });
       }
       if (subcategory) {
-        filtered = filtered.filter(
-          (p) => p.subcategory?.toLowerCase() === subcategory.toLowerCase()
-        );
+        const subNorm = subcategory.toLowerCase().replace(/[^a-z0-9]/g, "");
+        filtered = filtered.filter((p) => {
+          const pNorm = (p.subcategory || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+          return pNorm === subNorm || p.subcategory?.toLowerCase() === subcategory.toLowerCase();
+        });
       }
       if (fabric) {
         filtered = filtered.filter((p) =>
@@ -99,13 +103,26 @@ export async function getProducts(req, res) {
     const queryParams = [];
 
     if (category) {
-      whereClause += " AND LOWER(category_name) = LOWER(?)";
-      queryParams.push(category);
+      const cleanCat = category.trim();
+      const spacedCat = cleanCat.replace(/-/g, " ");
+      whereClause += ` AND (
+        LOWER(category_name) = LOWER(?)
+        OR LOWER(REPLACE(category_name, ' ', '-')) = LOWER(?)
+        OR LOWER(category_name) IN (SELECT LOWER(name) FROM categories WHERE LOWER(slug) = LOWER(?) OR LOWER(name) = LOWER(?))
+        OR LOWER(category_name) LIKE LOWER(?)
+      )`;
+      queryParams.push(cleanCat, cleanCat, cleanCat, cleanCat, `%${spacedCat}%`);
     }
 
     if (subcategory) {
-      whereClause += " AND LOWER(subcategory) = LOWER(?)";
-      queryParams.push(subcategory);
+      const cleanSub = subcategory.trim();
+      const spacedSub = cleanSub.replace(/-/g, " ");
+      whereClause += ` AND (
+        LOWER(subcategory) = LOWER(?)
+        OR LOWER(REPLACE(subcategory, ' ', '-')) = LOWER(?)
+        OR LOWER(subcategory) LIKE LOWER(?)
+      )`;
+      queryParams.push(cleanSub, cleanSub, `%${spacedSub}%`);
     }
 
     if (fabric) {

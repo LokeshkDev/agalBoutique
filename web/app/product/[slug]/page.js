@@ -66,10 +66,18 @@ export default async function ProductPage({ params }) {
     notFound();
   }
 
-  const allProdsRes = await getProducts({ category: product.category, limit: 5 });
-  const similarProducts = (allProdsRes?.products || fallbackProducts)
+  const allProdsRes = await getProducts({ category: product.category, limit: 8 });
+  let similarProducts = (allProdsRes?.products || [])
     .filter((p) => p.id !== product.id && p.slug !== product.slug)
     .slice(0, 4);
+
+  if (similarProducts.length < 4) {
+    const generalRes = await getProducts({ limit: 8 });
+    const additional = (generalRes?.products || fallbackProducts)
+      .filter((p) => p.id !== product.id && p.slug !== product.slug && !similarProducts.some((s) => s.id === p.id))
+      .slice(0, 4 - similarProducts.length);
+    similarProducts = [...similarProducts, ...additional];
+  }
 
   const discount = discountPercent(product.price, product.mrp);
 

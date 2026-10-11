@@ -127,6 +127,14 @@ const defaultCmsSettings = {
       enabled: true,
     },
   },
+  header_quick_menu: [
+    { id: "1", title: "All Collections", url: "/shop" },
+    { id: "2", title: "Sarees", url: "/shop?category=sarees" },
+    { id: "3", title: "Kurtis", url: "/shop?category=kurtis" },
+    { id: "4", title: "Full Sets", url: "/shop?category=full-sets" },
+    { id: "5", title: "About Us", url: "/about" },
+    { id: "6", title: "Contact", url: "/contact" },
+  ],
   header_nav_menu: [
     { title: "Popular", url: "/shop" },
     { title: "Sarees & Handlooms", url: "/shop?category=sarees" },
