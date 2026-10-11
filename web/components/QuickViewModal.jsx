@@ -63,6 +63,11 @@ export default function QuickViewModal({ product, open, onClose }) {
 
   const discount = discountPercent(product.price, product.mrp);
   const currentImg = normalizeImageUrl(product.images?.[selectedImgIdx] || product.images?.[0]);
+  const [modalImgSrc, setModalImgSrc] = useState(currentImg);
+
+  useEffect(() => {
+    setModalImgSrc(currentImg);
+  }, [currentImg]);
 
   // Stock calculation for selected size & color
   const selectedVariant = product?.sizes?.find(
@@ -206,12 +211,13 @@ export default function QuickViewModal({ product, open, onClose }) {
             <div className="md:col-span-5 lg:col-span-5 space-y-3">
               <div className="relative aspect-[3/4] w-full rounded-2xl overflow-hidden bg-gray-50 border border-gray-200 shadow-xs">
                 <Image
-                  src={currentImg}
+                  src={modalImgSrc || "/logo.png"}
                   alt={product.name}
                   fill
                   priority
                   sizes="(max-width: 767px) 100vw, 420px"
                   className="object-cover"
+                  onError={() => setModalImgSrc("/logo.png")}
                 />
               </div>
 

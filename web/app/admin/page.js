@@ -67,6 +67,7 @@ import {
   getCmsSettings,
   adminUpdateCmsSetting,
   sendOrderInvoice,
+  normalizeImageUrl,
 } from "@/lib/api";
 
 function SalesAnalyticsChart({ orders = [] }) {
@@ -744,7 +745,9 @@ export default function AdminPage() {
 
   const handleOpenEditProduct = (prod) => {
     setEditingProduct(prod);
-    const existingImages = (prod.images || []).map((img) => (typeof img === "string" ? img : img.url));
+    const existingImages = (prod.images || [])
+      .map((img) => (typeof img === "string" ? img : img?.url || ""))
+      .filter(Boolean);
     const mainImg = existingImages[0] || "";
     const extraImgs = [existingImages[1] || "", existingImages[2] || "", existingImages[3] || ""];
 
@@ -784,7 +787,9 @@ export default function AdminPage() {
 
   const handleDuplicateProduct = (prod) => {
     setEditingProduct(null); // null means saving will create a new product entry
-    const existingImages = (prod.images || []).map((img) => (typeof img === "string" ? img : img.url));
+    const existingImages = (prod.images || [])
+      .map((img) => (typeof img === "string" ? img : img?.url || ""))
+      .filter(Boolean);
     const mainImg = existingImages[0] || "";
     const extraImgs = [existingImages[1] || "", existingImages[2] || "", existingImages[3] || ""];
 
@@ -1751,9 +1756,9 @@ export default function AdminPage() {
                     onChange={(e) => setBadgeFilter(e.target.value)}
                     className="w-full h-11 px-3 text-sm border border-gray-300 rounded-xl focus:outline-none focus:border-plum bg-white cursor-pointer font-medium"
                   >
-                    <option value="All">All Badges</option>
-                    <option value="new">New Arrivals Only</option>
-                    <option value="bestseller">Bestsellers Only</option>
+                    <option value="All">All Showcase Sections</option>
+                    <option value="new">Fresh Arrivals & New Weaves</option>
+                    <option value="bestseller">Most Loved Bestsellers</option>
                   </select>
                 </div>
               </div>
@@ -1804,7 +1809,7 @@ export default function AdminPage() {
                       <th className="py-3.5 px-4">Category & Sub-Category</th>
                       <th className="py-3.5 px-4">Price / MRP</th>
                       <th className="py-3.5 px-4">Stock Qty</th>
-                      <th className="py-3.5 px-4">Badges</th>
+                      <th className="py-3.5 px-4">Showcase Section</th>
                       <th className="py-3.5 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
@@ -1839,9 +1844,10 @@ export default function AdminPage() {
                             </td>
                             <td className="py-3.5 px-4 flex items-center gap-3">
                               <img
-                                src={p.images?.[0]?.url || "/logo.png"}
+                                src={normalizeImageUrl(p.images?.[0]) || "/logo.png"}
                                 alt={p.name}
                                 className="w-12 h-14 object-cover rounded-lg bg-gray-100 shrink-0 border border-gray-200"
+                                onError={(e) => { e.currentTarget.src = "/logo.png"; }}
                               />
                               <div>
                                 <div className="font-bold text-sm sm:text-base text-gray-900">{p.name}</div>
@@ -1878,9 +1884,20 @@ export default function AdminPage() {
                               )}
                             </td>
                             <td className="py-3.5 px-4">
-                              <div className="flex items-center gap-1.5">
-                                {p.isNew && <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2 py-0.5 rounded">NEW</span>}
-                                {p.isBestseller && <span className="bg-amber-100 text-amber-800 text-xs font-bold px-2 py-0.5 rounded">BESTSELLER</span>}
+                              <div className="flex flex-col gap-1 items-start">
+                                {p.isNew && (
+                                  <span className="bg-emerald-100 text-emerald-800 text-[10px] sm:text-[11px] font-extrabold px-2 py-0.5 rounded-full border border-emerald-200 whitespace-nowrap">
+                                    ✦ Fresh Arrivals & New Weaves
+                                  </span>
+                                )}
+                                {p.isBestseller && (
+                                  <span className="bg-amber-100 text-amber-800 text-[10px] sm:text-[11px] font-extrabold px-2 py-0.5 rounded-full border border-amber-200 whitespace-nowrap">
+                                    ★ Most Loved Bestsellers
+                                  </span>
+                                )}
+                                {!p.isNew && !p.isBestseller && (
+                                  <span className="text-gray-400 text-xs italic">-</span>
+                                )}
                               </div>
                             </td>
                             <td className="py-3 px-4 text-right">
@@ -3858,26 +3875,31 @@ export default function AdminPage() {
                     />
                   </div>
 
-                  <div className="flex items-center gap-6 pt-1">
-                    <label className="flex items-center gap-2 text-sm font-bold text-gray-700 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={productForm.isNew}
-                        onChange={(e) => setProductForm({ ...productForm, isNew: e.target.checked })}
-                        className="w-4 h-4 rounded text-plum"
-                      />
-                      <span>Mark as New Arrival</span>
-                    </label>
+                  <div className="p-3.5 bg-gray-50 border border-gray-200 rounded-xl space-y-2">
+                    <span className="block text-xs font-black uppercase tracking-wider text-gray-500">
+                      Homepage Showcase Sections
+                    </span>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
+                      <label className="flex items-center gap-2 text-sm font-bold text-gray-800 cursor-pointer hover:text-plum transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={productForm.isNew}
+                          onChange={(e) => setProductForm({ ...productForm, isNew: e.target.checked })}
+                          className="w-4 h-4 rounded text-plum accent-plum cursor-pointer"
+                        />
+                        <span>Fresh Arrivals & New Weaves</span>
+                      </label>
 
-                    <label className="flex items-center gap-2 text-sm font-bold text-gray-700 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={productForm.isBestseller}
-                        onChange={(e) => setProductForm({ ...productForm, isBestseller: e.target.checked })}
-                        className="w-4 h-4 rounded text-plum"
-                      />
-                      <span>Mark as Bestseller</span>
-                    </label>
+                      <label className="flex items-center gap-2 text-sm font-bold text-gray-800 cursor-pointer hover:text-plum transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={productForm.isBestseller}
+                          onChange={(e) => setProductForm({ ...productForm, isBestseller: e.target.checked })}
+                          className="w-4 h-4 rounded text-plum accent-plum cursor-pointer"
+                        />
+                        <span>Most Loved Bestsellers</span>
+                      </label>
+                    </div>
                   </div>
                 </div>
 
@@ -4374,6 +4396,16 @@ export default function AdminPage() {
                   {viewingProduct.subcategory}
                 </span>
               )}
+              {viewingProduct.isNew && (
+                <span className="bg-emerald-100 text-emerald-800 font-extrabold text-xs px-2.5 py-0.5 rounded-full border border-emerald-200">
+                  ✦ Fresh Arrivals & New Weaves
+                </span>
+              )}
+              {viewingProduct.isBestseller && (
+                <span className="bg-amber-100 text-amber-800 font-extrabold text-xs px-2.5 py-0.5 rounded-full border border-amber-200">
+                  ★ Most Loved Bestsellers
+                </span>
+              )}
               <span className="text-xs text-gray-400 font-mono">ID: {viewingProduct.id}</span>
             </div>
 
@@ -4381,18 +4413,20 @@ export default function AdminPage() {
               {/* Product Gallery Images Preview */}
               <div className="space-y-3">
                 <img
-                  src={viewingProduct.images?.[0]?.url || "/logo.png"}
+                  src={normalizeImageUrl(viewingProduct.images?.[0]) || "/logo.png"}
                   alt={viewingProduct.name}
                   className="w-full h-64 object-cover rounded-xl border border-gray-200 shadow-xs"
+                  onError={(e) => { e.currentTarget.src = "/logo.png"; }}
                 />
                 {viewingProduct.images?.length > 1 && (
                   <div className="flex items-center gap-2 overflow-x-auto pb-1">
                     {viewingProduct.images.map((img, i) => (
                       <img
                         key={i}
-                        src={typeof img === "string" ? img : img.url}
+                        src={normalizeImageUrl(img) || "/logo.png"}
                         alt={`Gallery ${i + 1}`}
                         className="w-14 h-16 object-cover rounded-lg border border-gray-200 shrink-0"
+                        onError={(e) => { e.currentTarget.src = "/logo.png"; }}
                       />
                     ))}
                   </div>
@@ -4639,9 +4673,10 @@ export default function AdminPage() {
                         <td className="py-3 px-3">
                           <div className="flex items-center gap-3">
                             <img
-                              src={item.image || item.images?.[0]?.url || "/logo.png"}
+                              src={normalizeImageUrl(item.image || item.images?.[0]) || "/logo.png"}
                               alt={item.name}
                               className="w-11 h-14 object-cover rounded-lg border border-gray-200 shrink-0"
+                              onError={(e) => { e.currentTarget.src = "/logo.png"; }}
                             />
                             <div>
                               <div className="font-bold text-gray-900">{item.name}</div>

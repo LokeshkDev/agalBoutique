@@ -1,11 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { normalizeImageUrl } from "@/lib/api";
 
 export default function ProductGallery({ images = [], name }) {
   const [selectedIdx, setSelectedIdx] = useState(0);
+  const currentImgUrl = normalizeImageUrl(images[selectedIdx] || images[0]);
+  const [mainImgSrc, setMainImgSrc] = useState(currentImgUrl);
+
+  useEffect(() => {
+    setMainImgSrc(normalizeImageUrl(images[selectedIdx] || images[0]));
+  }, [images, selectedIdx]);
 
   if (!images.length) return null;
 
@@ -42,12 +48,13 @@ export default function ProductGallery({ images = [], name }) {
       {/* Main Feature Image with 5px radius and NO border */}
       <div className="relative w-full aspect-[3/4] rounded-[5px] overflow-hidden bg-gray-50 shadow-md">
         <Image
-          src={normalizeImageUrl(images[selectedIdx] || images[0])}
+          src={mainImgSrc || "/logo.png"}
           alt={typeof images[selectedIdx] === "object" ? (images[selectedIdx]?.alt || name) : name}
           fill
           priority
           sizes="(max-width: 1023px) 100vw, 550px"
           className="object-cover transition-all duration-200"
+          onError={() => setMainImgSrc("/logo.png")}
         />
 
         {/* Dots indicator for mobile */}

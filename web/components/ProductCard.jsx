@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Heart, Star, Eye } from "@phosphor-icons/react";
@@ -33,6 +33,11 @@ export default function ProductCard({ product, priority = false }) {
 
   const mainImage = normalizeImageUrl(images?.[0]);
   const [imgSrc, setImgSrc] = useState(mainImage);
+
+  useEffect(() => {
+    setImgSrc(normalizeImageUrl(images?.[0]));
+  }, [images]);
+
   const discount = discountPercent(price, mrp);
 
   return (

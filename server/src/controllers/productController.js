@@ -31,6 +31,8 @@ export async function getProducts(req, res) {
       size,
       minPrice,
       maxPrice,
+      isNew,
+      isBestseller,
       page = 1,
       limit = 20,
     } = req.query;
@@ -76,6 +78,12 @@ export async function getProducts(req, res) {
       }
       if (sort === "price_asc") filtered.sort((a, b) => a.price - b.price);
       if (sort === "price_desc") filtered.sort((a, b) => b.price - a.price);
+      if (isNew === "true" || isNew === "1" || isNew === true) {
+        filtered = filtered.filter((p) => Boolean(p.isNew));
+      }
+      if (isBestseller === "true" || isBestseller === "1" || isBestseller === true) {
+        filtered = filtered.filter((p) => Boolean(p.isBestseller));
+      }
 
       return res.json({
         success: true,
@@ -124,6 +132,14 @@ export async function getProducts(req, res) {
     if (maxPrice) {
       whereClause += " AND price <= ?";
       queryParams.push(parseFloat(maxPrice));
+    }
+
+    if (isNew === "true" || isNew === "1" || isNew === true) {
+      whereClause += " AND is_new = 1";
+    }
+
+    if (isBestseller === "true" || isBestseller === "1" || isBestseller === true) {
+      whereClause += " AND is_bestseller = 1";
     }
 
     let orderBy = "ORDER BY created_at DESC";

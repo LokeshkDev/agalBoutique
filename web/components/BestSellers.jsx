@@ -11,9 +11,15 @@ export default function BestSellers() {
 
   useEffect(() => {
     async function loadData() {
-      const res = await getProducts({ sort: "rating", limit: 8 });
-      if (res?.success && Array.isArray(res.products)) {
+      // Prioritize products marked as Most Loved Bestsellers (isBestseller = true)
+      const res = await getProducts({ isBestseller: true, limit: 12 });
+      if (res?.success && Array.isArray(res.products) && res.products.length > 0) {
         setBestSellers(res.products);
+      } else {
+        const fallbackRes = await getProducts({ sort: "rating", limit: 8 });
+        if (fallbackRes?.success && Array.isArray(fallbackRes.products)) {
+          setBestSellers(fallbackRes.products);
+        }
       }
     }
     loadData();
@@ -54,10 +60,10 @@ export default function BestSellers() {
             </p>
           </div>
           <Link
-            href="/shop?sort=rating"
+            href="/shop?isBestseller=true"
             className="text-xs sm:text-sm font-bold text-plum hover:underline"
           >
-            Explore all →
+            Explore all ({bestSellers.length}) →
           </Link>
         </div>
 

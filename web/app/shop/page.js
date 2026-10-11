@@ -44,6 +44,9 @@ export default async function ShopPage({ searchParams }) {
   const catRes = await getCategories();
   const categoriesList = catRes?.categories || [];
 
+  const isNew = params?.isNew !== undefined ? params.isNew : (params?.badge === "new" ? true : undefined);
+  const isBestseller = params?.isBestseller !== undefined ? params.isBestseller : (params?.badge === "bestseller" ? true : undefined);
+
   // Fetch products from DB API
   const prodRes = await getProducts({
     category,
@@ -52,6 +55,8 @@ export default async function ShopPage({ searchParams }) {
     sort,
     fabric,
     size,
+    isNew,
+    isBestseller,
     page,
     limit,
   });

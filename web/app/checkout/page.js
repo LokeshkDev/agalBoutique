@@ -21,7 +21,7 @@ import {
   FileText,
 } from "@phosphor-icons/react";
 
-import { submitOrderToBackend, getCmsSettings, sendOrderInvoice } from "@/lib/api";
+import { submitOrderToBackend, getCmsSettings, sendOrderInvoice, normalizeImageUrl } from "@/lib/api";
 import { useEffect } from "react";
 
 const INDIAN_STATES = [
@@ -996,7 +996,7 @@ export default function CheckoutPage() {
               >
                 <div className="relative w-14 h-18 rounded-[4px] overflow-hidden shrink-0 bg-white border border-gray-200">
                   <Image
-                    src={it.images?.[0]?.url || it.image || "/logo.png"}
+                    src={normalizeImageUrl(it.image || it.images?.[0])}
                     alt={it.name}
                     fill
                     sizes="56px"

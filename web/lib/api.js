@@ -46,6 +46,8 @@ export async function getProducts(params = {}) {
   if (params.maxPrice) query.append("maxPrice", params.maxPrice);
   if (params.fabric) query.append("fabric", params.fabric);
   if (params.size) query.append("size", params.size);
+  if (params.isNew !== undefined) query.append("isNew", params.isNew);
+  if (params.isBestseller !== undefined) query.append("isBestseller", params.isBestseller);
   if (params.page) query.append("page", params.page);
   if (params.limit) query.append("limit", params.limit);
 
@@ -213,6 +215,9 @@ export function normalizeImageUrl(img) {
 
   if (!rawUrl || typeof rawUrl !== "string") return "/logo.png";
   const trimmed = rawUrl.trim();
+  if (!trimmed || trimmed === "undefined" || trimmed === "null" || trimmed === "[object Object]") {
+    return "/logo.png";
+  }
 
   // If pointing to localhost / local uploads, remap to Cloudflare R2 public bucket in production or fallback
   const R2_PUBLIC_FALLBACK = "https://pub-392d2e841ea042c7962ed83ddd3d4ad5.r2.dev/uploads/";

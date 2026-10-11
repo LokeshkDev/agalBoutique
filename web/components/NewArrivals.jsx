@@ -10,9 +10,15 @@ export default function NewArrivals() {
 
   useEffect(() => {
     async function loadData() {
-      const res = await getProducts({ sort: "newest", limit: 8 });
-      if (res?.success && Array.isArray(res.products)) {
+      // Prioritize products marked as Fresh Arrivals & New Weaves (isNew = true)
+      const res = await getProducts({ isNew: true, limit: 12 });
+      if (res?.success && Array.isArray(res.products) && res.products.length > 0) {
         setProducts(res.products);
+      } else {
+        const fallbackRes = await getProducts({ sort: "newest", limit: 8 });
+        if (fallbackRes?.success && Array.isArray(fallbackRes.products)) {
+          setProducts(fallbackRes.products);
+        }
       }
     }
     loadData();
@@ -36,7 +42,7 @@ export default function NewArrivals() {
             </p>
           </div>
           <Link
-            href="/shop?sort=newest"
+            href="/shop?isNew=true"
             className="text-xs sm:text-sm font-bold text-plum hover:underline"
           >
             View all ({products.length}) →
