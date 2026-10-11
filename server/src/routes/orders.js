@@ -7,6 +7,7 @@ import {
   deleteOrder,
   processOrderReturn,
   processOrderReplace,
+  sendOrderInvoice,
 } from "../controllers/orderController.js";
 import { adminAuthMiddleware } from "../middleware/adminAuth.js";
 
@@ -17,6 +18,7 @@ router.get("/all", adminAuthMiddleware, getAllOrders);
 router.put("/:id/status", adminAuthMiddleware, updateOrderStatus);
 router.post("/:id/return", adminAuthMiddleware, processOrderReturn);
 router.post("/:id/replace", adminAuthMiddleware, processOrderReplace);
+router.post("/:orderNumber/send-invoice", sendOrderInvoice);
 router.delete("/:id", adminAuthMiddleware, deleteOrder);
 router.get("/:orderNumber", getOrder);
 

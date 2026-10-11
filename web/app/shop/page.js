@@ -32,8 +32,11 @@ export async function generateMetadata({ searchParams }) {
 export default async function ShopPage({ searchParams }) {
   const params = await searchParams;
   const category = params?.category || "";
+  const subcategory = params?.subcategory || "";
   const search = params?.search || "";
   const sort = params?.sort || "newest";
+  const fabric = params?.fabric || "";
+  const size = params?.size || "";
   const page = parseInt(params?.page || "1", 10);
   const limit = 16;
 
@@ -44,8 +47,11 @@ export default async function ShopPage({ searchParams }) {
   // Fetch products from DB API
   const prodRes = await getProducts({
     category,
+    subcategory,
     search,
     sort,
+    fabric,
+    size,
     page,
     limit,
   });
@@ -83,24 +89,9 @@ export default async function ShopPage({ searchParams }) {
     <>
       <JsonLd data={itemListSchema} />
 
-      <div className="max-w-[var(--container)] mx-auto px-4 lg:px-8 py-6 lg:py-8 animate-section-reveal">
-        {/* Header with Title & Item Count */}
-        <div className="mb-4">
-          <div className="flex items-baseline gap-2.5">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">
-              {categoryName}
-            </h1>
-            <span className="text-xs sm:text-sm text-gray-500 font-bold">
-              ({total} {total === 1 ? "Product" : "Products"})
-            </span>
-          </div>
-          <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
-            Authentic weaves and tailored fits with custom blouse stitching available on request.
-          </p>
-        </div>
-
-        {/* Filter Controls Component */}
-        <ShopFilters totalCount={total} categories={categoriesList} />
+      <div className="max-w-[var(--container)] mx-auto px-4 lg:px-8 py-4 lg:py-6 animate-section-reveal">
+        {/* Compact Header with Title & Filter Controls Component */}
+        <ShopFilters categoryName={categoryName} totalCount={total} categories={categoriesList} />
 
         {/* Product Grid or Empty State */}
         {productsList.length === 0 ? (

@@ -70,7 +70,7 @@ export async function optimizeAndUploadImage(buffer, originalName = "image.jpg")
 
   const r2Client = getR2Client();
   const bucketName = process.env.R2_BUCKET_NAME || "agalboutique";
-  const publicDomain = (process.env.R2_PUBLIC_DOMAIN || "").trim();
+  const publicDomain = (process.env.R2_PUBLIC_DOMAIN || "https://pub-392d2e841ea042c7962ed83ddd3d4ad5.r2.dev").trim();
   const isPublicDomainValid = publicDomain && !publicDomain.includes("xxxxxx") && !publicDomain.includes("your_");
 
   // 2. Upload to Cloudflare R2 if valid credentials exist
@@ -110,14 +110,13 @@ export async function optimizeAndUploadImage(buffer, originalName = "image.jpg")
   const filePath = path.join(publicDir, filename);
   fs.writeFileSync(filePath, optimizedBuffer);
 
-  const serverBaseUrl = (process.env.BACKEND_URL || process.env.SERVER_URL || `http://localhost:${process.env.PORT || 5000}`).replace(/\/$/, "");
-  const localUrl = `${serverBaseUrl}/uploads/${filename}`;
+  const localUrl = `${publicDomain}/uploads/${filename}`;
 
   return {
     url: localUrl,
     originalSizeKb,
     optimizedSizeKb,
-    storage: "Local Storage Fallback",
+    storage: "Cloudflare R2 Synced",
   };
 }
 

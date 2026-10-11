@@ -34,8 +34,10 @@ export default function CartSheet() {
   useEffect(() => {
     if (open) {
       getCmsSettings().then((res) => {
-        if (res?.settings?.delivery_settings?.freeThreshold !== undefined) {
-          setFreeThreshold(Number(res.settings.delivery_settings.freeThreshold));
+        const d = res?.settings?.delivery_settings;
+        const threshold = d?.online?.freeThreshold ?? d?.freeThreshold;
+        if (threshold !== undefined) {
+          setFreeThreshold(Number(threshold));
         }
       });
     }

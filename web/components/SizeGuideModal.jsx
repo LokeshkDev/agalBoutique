@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X, Ruler, CheckCircle, Info } from "@phosphor-icons/react";
 
 const SIZE_CHARTS = {
@@ -63,14 +64,30 @@ export default function SizeGuideModal({ open, onClose, category = "Kurtis" }) {
 
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [unit, setUnit] = useState("in"); // "in" or "cm"
+  const [mounted, setMounted] = useState(false);
 
-  if (!open) return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
+  if (!open || !mounted) return null;
 
   const currentChart = SIZE_CHARTS[activeTab] || SIZE_CHARTS.kurtis;
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-xs animate-fadeIn"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-xs animate-fadeIn"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -214,7 +231,8 @@ export default function SizeGuideModal({ open, onClose, category = "Kurtis" }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

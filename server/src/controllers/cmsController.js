@@ -113,6 +113,19 @@ const defaultCmsSettings = {
     standardFee: 79,
     freeThreshold: 999,
     estimateDays: "3-5 Business Days",
+    online: {
+      firstItemFee: 79,
+      additionalItemFee: 25,
+      freeThreshold: 999,
+      estimateDays: "3-5 Business Days",
+    },
+    cod: {
+      firstItemFee: 99,
+      additionalItemFee: 35,
+      freeThreshold: 1499,
+      estimateDays: "4-7 Business Days",
+      enabled: true,
+    },
   },
   header_nav_menu: [
     { title: "Popular", url: "/shop" },

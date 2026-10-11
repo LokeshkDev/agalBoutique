@@ -5,12 +5,19 @@ import BestSellers from "@/components/BestSellers";
 import TestimonialsSlider from "@/components/TestimonialsSlider";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import { getCmsSettings } from "@/lib/api";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const cmsRes = await getCmsSettings();
+  const heroSlides =
+    cmsRes?.success && Array.isArray(cmsRes?.settings?.hero_slides)
+      ? cmsRes.settings.hero_slides
+      : [];
+
   return (
     <>
-      {/* 1. Full-Width Meesho Style Carousel Banners */}
-      <HeroCarousel />
+      {/* 1. Full-Width Meesho Style Carousel Banners (Database Loaded) */}
+      <HeroCarousel initialSlides={heroSlides} />
 
       {/* 2. Shop by Category (Arched Pastel Dome Row) */}
       <CategoryRow />

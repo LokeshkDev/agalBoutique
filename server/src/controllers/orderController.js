@@ -16,7 +16,8 @@ export async function ensureOrderSchema() {
   } catch (err) {}
   try {
     await pool.query(`
-      ALTER TABLE orders ADD COLUMN return_history JSON DEFAULT NULL
+      ALTER TABLE orders 
+      MODIFY COLUMN customer_email VARCHAR(255) NULL DEFAULT ''
     `);
   } catch (err) {}
   schemaEnsured = true;
@@ -36,7 +37,6 @@ export async function createOrder(req, res) {
       !shippingAddress ||
       !shippingAddress.name ||
       !shippingAddress.phone ||
-      !shippingAddress.email ||
       !shippingAddress.line1 ||
       !shippingAddress.pin
     ) {
@@ -98,8 +98,12 @@ export async function createOrder(req, res) {
     }
 
     // Fetch dynamic delivery settings from cms_settings
-    let standardFee = 79;
-    let freeThreshold = 999;
+    let deliveryConfig = {
+      standardFee: 79,
+      freeThreshold: 999,
+      online: { firstItemFee: 79, additionalItemFee: 25, freeThreshold: 999 },
+      cod: { firstItemFee: 99, additionalItemFee: 35, freeThreshold: 1499, enabled: true },
+    };
 
     if (pool && isConnected) {
       try {
@@ -107,8 +111,7 @@ export async function createOrder(req, res) {
         if (dRows.length > 0) {
           const dVal = typeof dRows[0].setting_value === "string" ? JSON.parse(dRows[0].setting_value) : dRows[0].setting_value;
           if (dVal) {
-            standardFee = parseFloat(dVal.standardFee ?? 79);
-            freeThreshold = parseFloat(dVal.freeThreshold ?? 999);
+            deliveryConfig = { ...deliveryConfig, ...dVal };
           }
         }
       } catch (dErr) {
@@ -116,8 +119,42 @@ export async function createOrder(req, res) {
       }
     }
 
-    const shippingFee = calculatedSubtotal >= freeThreshold ? 0 : standardFee;
-    const codFee = 0; // Free COD per requirements
+    const totalUnits = processedItems.reduce((acc, it) => acc + (parseInt(it.qty || 1, 10)), 0);
+    const isCod = (paymentMethod || "").toLowerCase() === "cod";
+
+    let shippingFee = 0;
+    let codFee = 0;
+
+    if (isCod) {
+      const codSettings = deliveryConfig.cod || {
+        firstItemFee: 99,
+        additionalItemFee: 35,
+        freeThreshold: 1499,
+      };
+      const codFreeThresh = parseFloat(codSettings.freeThreshold ?? 1499);
+      if (codFreeThresh > 0 && calculatedSubtotal >= codFreeThresh) {
+        shippingFee = 0;
+      } else if (totalUnits > 0) {
+        const base = parseFloat(codSettings.firstItemFee ?? 99);
+        const extraPerItem = parseFloat(codSettings.additionalItemFee ?? 35);
+        shippingFee = base + Math.max(0, totalUnits - 1) * extraPerItem;
+      }
+    } else {
+      const onlineSettings = deliveryConfig.online || {
+        firstItemFee: parseFloat(deliveryConfig.standardFee ?? 79),
+        additionalItemFee: 25,
+        freeThreshold: parseFloat(deliveryConfig.freeThreshold ?? 999),
+      };
+      const onlineFreeThresh = parseFloat(onlineSettings.freeThreshold ?? deliveryConfig.freeThreshold ?? 999);
+      if (onlineFreeThresh > 0 && calculatedSubtotal >= onlineFreeThresh) {
+        shippingFee = 0;
+      } else if (totalUnits > 0) {
+        const base = parseFloat(onlineSettings.firstItemFee ?? deliveryConfig.standardFee ?? 79);
+        const extraPerItem = parseFloat(onlineSettings.additionalItemFee ?? 25);
+        shippingFee = base + Math.max(0, totalUnits - 1) * extraPerItem;
+      }
+    }
+
     const grandTotal = calculatedSubtotal + shippingFee + codFee;
 
     const orderNumber = `AGAL-${Math.floor(100000 + Math.random() * 900000)}`;
@@ -126,7 +163,7 @@ export async function createOrder(req, res) {
       orderNumber,
       customerName: shippingAddress.name,
       customerPhone: shippingAddress.phone,
-      customerEmail: shippingAddress.email,
+      customerEmail: shippingAddress.email || "",
       shippingAddress,
       subtotal: calculatedSubtotal,
       shippingFee,
@@ -238,7 +275,7 @@ export async function createOrder(req, res) {
         orderNumber,
         shippingAddress.name,
         shippingAddress.phone,
-        shippingAddress.email,
+        shippingAddress.email || "",
         JSON.stringify(shippingAddress),
         calculatedSubtotal,
         shippingFee,
@@ -864,6 +901,119 @@ export async function getAdminStats(req, res) {
   } catch (err) {
     console.error("Error in getAdminStats:", err);
     res.status(500).json({ success: false, message: "Failed to fetch admin stats" });
+  }
+}
+
+// POST /api/orders/:orderNumber/send-invoice
+export async function sendOrderInvoice(req, res) {
+  try {
+    const { orderNumber } = req.params;
+    let { phone, customerName, baseUrl } = req.body || {};
+
+    let order = null;
+    if (pool && isConnected) {
+      const [rows] = await pool.query(
+        "SELECT * FROM orders WHERE order_number = ? LIMIT 1",
+        [orderNumber]
+      );
+      if (rows.length > 0) {
+        const r = rows[0];
+        let addr = {};
+        try {
+          addr = typeof r.shipping_address === "string" ? JSON.parse(r.shipping_address) : (r.shipping_address || {});
+        } catch (e) {}
+        let items = [];
+        try {
+          items = typeof r.items === "string" ? JSON.parse(r.items) : (r.items || []);
+        } catch (e) {}
+        order = {
+          orderNumber: r.order_number,
+          customerName: r.customer_name || addr.name || "Valued Customer",
+          customerPhone: r.customer_phone || addr.phone || phone || "",
+          customerEmail: r.customer_email || addr.email || "",
+          totalAmount: parseFloat(r.total_amount || 0),
+          subtotal: parseFloat(r.subtotal || 0),
+          shippingFee: parseFloat(r.shipping_fee || 0),
+          paymentMethod: r.payment_method || "online",
+          items: items,
+          shippingAddress: addr,
+          createdAt: r.created_at,
+        };
+      }
+    }
+
+    if (!order) {
+      order = inMemoryOrders.find((o) => o.orderNumber === orderNumber);
+    }
+
+    if (!order) {
+      order = {
+        orderNumber,
+        customerName: customerName || "Customer",
+        customerPhone: phone || "",
+        totalAmount: req.body?.totalAmount || 0,
+        subtotal: req.body?.subtotal || 0,
+        shippingFee: req.body?.shippingFee || 0,
+        paymentMethod: req.body?.paymentMethod || "online",
+        items: req.body?.items || [],
+        shippingAddress: req.body?.shippingAddress || {},
+        createdAt: new Date().toISOString(),
+      };
+    }
+
+    const recipientPhone = phone || order.customerPhone || order.shippingAddress?.phone || "";
+    if (!recipientPhone) {
+      return res.status(400).json({ success: false, message: "Customer phone number is required to send invoice." });
+    }
+
+    // Clean phone number (strip spaces, dashes, parentheses)
+    let cleanPhone = String(recipientPhone).replace(/[^0-9]/g, "");
+    if (cleanPhone.length === 10) {
+      cleanPhone = "91" + cleanPhone;
+    }
+
+    const host = baseUrl || process.env.FRONTEND_URL || "http://localhost:3000";
+    const invoiceUrl = `${host}/invoice/${order.orderNumber}`;
+
+    const itemsSummary = (order.items || [])
+      .map((it) => `• ${it.name} (${it.size || "Free Size"}) x ${it.qty || 1} - ₹${(it.price || 0) * (it.qty || 1)}`)
+      .join("\n");
+
+    const invoiceText = 
+`✨ *AGAL BOUTIQUE - TAX INVOICE & ORDER CONFIRMATION* ✨
+━━━━━━━━━━━━━━━━━━━━
+Order Number: *#${order.orderNumber}*
+Customer Name: *${order.customerName || "Customer"}*
+Payment Method: *${(order.paymentMethod || "Online").toUpperCase()}*
+Grand Total: *₹${order.totalAmount || 0}*
+
+📦 *Items Purchased:*
+${itemsSummary || "• Handcrafted Boutique Items"}
+
+📄 *Download / View Official Tax Invoice (PDF):*
+${invoiceUrl}
+
+📍 *Shipping Address:*
+${order.shippingAddress?.line1 || ""}, ${order.shippingAddress?.city || ""}, ${order.shippingAddress?.state || ""} - ${order.shippingAddress?.pin || ""}
+
+Thank you for shopping with Agal Boutique! For any assistance, contact us at +91 98765 43210.`;
+
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(invoiceText)}`;
+
+    console.log(`[Invoice Dispatch] Invoice for Order #${order.orderNumber} prepared for phone: ${cleanPhone}`);
+
+    res.json({
+      success: true,
+      message: `Invoice successfully prepared for +${cleanPhone}`,
+      phone: cleanPhone,
+      orderNumber: order.orderNumber,
+      invoiceUrl,
+      whatsappUrl,
+      invoiceText,
+    });
+  } catch (err) {
+    console.error("Error in sendOrderInvoice:", err);
+    res.status(500).json({ success: false, message: "Failed to send invoice" });
   }
 }
 

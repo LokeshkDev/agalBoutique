@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useCart } from "@/store/cart";
-import { Handbag, Ruler, CheckCircle } from "@phosphor-icons/react";
+import { Handbag, Ruler, CheckCircle, Sparkle, WarningCircle, X } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 import { getColorHex, formatPrice } from "@/lib/format";
 import SizeGuideModal from "@/components/SizeGuideModal";
@@ -21,6 +21,7 @@ export default function ProductActions({ product }) {
   const [qty, setQty] = useState(1);
   const [sizeError, setSizeError] = useState(false);
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
+  const [stockAlert, setStockAlert] = useState({ open: false, title: "", message: "" });
 
   const addItem = useCart((s) => s.add);
 
@@ -45,12 +46,68 @@ export default function ProductActions({ product }) {
   const isOutOfStock = variantStock <= 0;
 
   const decrementQty = () => setQty((prev) => Math.max(1, prev - 1));
-  const incrementQty = () => setQty((prev) => Math.min(10, prev + 1));
+  const incrementQty = () => {
+    if (variantStock === 1) {
+      setStockAlert({
+        open: true,
+        title: "Only 1 Item Available",
+        message: `Only 1 piece is in stock for size ${selectedSize || defaultSize}. You cannot add more than 1 item.`,
+      });
+      return;
+    }
+    setQty((prev) => Math.min(Math.min(10, variantStock), prev + 1));
+  };
 
   const handleAddToCart = (redirectCheckout = false) => {
     if (isOutOfStock) return;
     const finalSize = selectedSize || defaultSize;
     setSizeError(false);
+
+    // Check if item has only 1 qty in stock
+    const cartItems = useCart.getState().items;
+    const existingInCart = cartItems.find(
+      (item) =>
+        String(item.id) === String(product.id) &&
+        String(item.size) === String(finalSize) &&
+        (!selectedColor || String(item.color).toLowerCase() === String(selectedColor).toLowerCase())
+    );
+
+    if (variantStock === 1) {
+      if (existingInCart && existingInCart.qty >= 1) {
+        setStockAlert({
+          open: true,
+          title: "Only 1 Item Available",
+          message: `There is only 1 item in stock for size ${finalSize}, and it is already in your shopping bag!`,
+        });
+        return;
+      }
+
+      // Add the single available item to bag
+      addItem({
+        id: product.id,
+        name: product.name,
+        slug: product.slug,
+        price: variantPrice,
+        mrp: product.mrp,
+        size: finalSize,
+        color: selectedColor || product.colors?.[0] || "",
+        qty: 1,
+        image: product.images?.[0]?.url,
+        images: product.images,
+      });
+
+      // Show theme alert message
+      setStockAlert({
+        open: true,
+        title: "Only 1 Item Left in Stock!",
+        message: `Hurry! There is only 1 item remaining in stock for size ${finalSize}. We have reserved the last available piece in your shopping bag.`,
+      });
+
+      if (redirectCheckout) {
+        router.push("/checkout");
+      }
+      return;
+    }
 
     addItem({
       id: product.id,
@@ -300,6 +357,56 @@ export default function ProductActions({ product }) {
           {isOutOfStock ? "Out of Stock" : "Add to Bag"}
         </button>
       </div>
+
+      {/* THEME DESIGNED STOCK ALERT POPUP MODAL */}
+      {stockAlert.open && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-purple-200 text-center space-y-4 font-sans animate-scale-in relative">
+            <button
+              type="button"
+              onClick={() => setStockAlert({ open: false, title: "", message: "" })}
+              className="absolute right-3.5 top-3.5 text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 cursor-pointer"
+              aria-label="Close alert"
+            >
+              <X size={18} weight="bold" />
+            </button>
+
+            <div className="w-14 h-14 rounded-full bg-purple-50 text-plum mx-auto flex items-center justify-center border border-purple-200">
+              <Sparkle size={28} weight="fill" className="text-amber-500" />
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="text-lg font-black text-gray-900 tracking-tight">
+                {stockAlert.title}
+              </h3>
+              <p className="text-xs sm:text-sm text-gray-600 font-medium leading-relaxed">
+                {stockAlert.message}
+              </p>
+            </div>
+
+            <div className="pt-2 flex flex-col sm:flex-row gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setStockAlert({ open: false, title: "", message: "" });
+                  useCart.getState().openCart();
+                }}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-plum hover:bg-plum-900 text-white text-xs font-bold transition-colors shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <Handbag size={16} weight="bold" />
+                <span>View In Bag</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setStockAlert({ open: false, title: "", message: "" })}
+                className="py-2.5 px-4 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 text-xs font-bold transition-colors cursor-pointer"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -54,13 +54,13 @@ export default function CategoryRow() {
               className="w-full group text-center flex flex-col items-center cursor-pointer"
             >
               {/* Arched Pastel Dome Frame */}
-              <div className="relative w-full aspect-[4/5] rounded-t-[999px] rounded-b-[16px] bg-[#f7eaf2] overflow-hidden transition-all duration-300 group-hover:scale-105 group-hover:shadow-md border border-pink-100/50">
+              <div className="relative w-full aspect-[165/209] rounded-t-[999px] rounded-b-none bg-[#faeef4] overflow-hidden transition-all duration-300 group-hover:scale-105 group-hover:shadow-md border border-pink-100/60">
                 {cat.image ? (
                   <Image
                     src={cat.image}
                     alt={cat.name}
                     fill
-                    sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, 160px"
+                    sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, 165px"
                     className="object-cover object-top transition-transform duration-300 group-hover:scale-110"
                   />
                 ) : (
@@ -70,8 +70,8 @@ export default function CategoryRow() {
                 )}
               </div>
 
-              {/* Clean Centered Category Label */}
-              <span className="mt-2.5 text-xs sm:text-sm lg:text-base font-bold text-gray-900 group-hover:text-plum transition-colors line-clamp-1">
+              {/* Clean Centered Category Label (wraps to next line, never cut off) */}
+              <span className="mt-2.5 text-xs sm:text-[13px] lg:text-sm font-bold text-gray-900 group-hover:text-plum transition-colors text-center leading-tight sm:leading-snug break-words px-1 w-full block">
                 {cat.name}
               </span>
             </Link>

@@ -32,6 +32,7 @@ export default function ProductCard({ product, priority = false }) {
   } = product;
 
   const mainImage = normalizeImageUrl(images?.[0]);
+  const [imgSrc, setImgSrc] = useState(mainImage);
   const discount = discountPercent(price, mrp);
 
   return (
@@ -41,12 +42,13 @@ export default function ProductCard({ product, priority = false }) {
         <div className="relative aspect-[3/4] w-full rounded-[5px] overflow-hidden bg-gray-50">
           <Link href={`/product/${slug}`} className="relative block w-full h-full">
             <Image
-              src={mainImage}
+              src={imgSrc || "/logo.png"}
               alt={images?.[0]?.alt || name}
               fill
               sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1359px) 25vw, 20vw"
               className="object-cover transition-transform duration-300 group-hover:scale-105"
               priority={priority}
+              onError={() => setImgSrc("/logo.png")}
             />
           </Link>
 

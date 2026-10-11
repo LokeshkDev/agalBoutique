@@ -24,19 +24,24 @@ export const metadata = {
     process.env.NEXT_PUBLIC_SITE_URL || "https://www.agalboutique.com"
   ),
   title: {
-    default: "Agal Boutique | Handcrafted Women's Fashion & Custom Stitching",
+    default: "Agal Boutique - Plus Size Premium Store | Women's Ethnic Wear & Handlooms",
     template: "%s | Agal Boutique",
   },
   description:
-    "Handcrafted sarees, kurtis, lehenga sets, and bespoke custom stitching from Tamil Nadu. Shipped across India with easy returns.",
+    "Agal Boutique is India's premium plus-size women's ethnic wear store offering curated sizes 34 to 56 (XS to 6XL). Explore handpicked Kanchipuram sarees, breathable pure cambric cotton kurtis, bespoke custom-stitched blouses, and festive lehengas with express delivery across India.",
   keywords: [
     "Agal Boutique",
-    "women's boutique Chennai",
-    "sarees online India",
-    "custom blouse stitching",
-    "cotton kurtis",
-    "lehenga sets",
-    "Tamil Nadu boutique",
+    "plus size premium store",
+    "plus size ethnic wear India",
+    "plus size kurtis online",
+    "plus size sarees online",
+    "size 34 to 56 women clothing",
+    "curvy women ethnic fashion",
+    "custom blouse stitching Chennai",
+    "pure cotton kurtis plus size",
+    "plus size anarkali suits",
+    "Tamil Nadu handloom sarees",
+    "South Indian ethnic wear boutique",
   ],
   authors: [{ name: "Agal Boutique" }],
   openGraph: {
@@ -44,9 +49,9 @@ export const metadata = {
     locale: "en_IN",
     url: "https://www.agalboutique.com",
     siteName: "Agal Boutique",
-    title: "Agal Boutique | Handcrafted Women's Fashion & Custom Stitching",
+    title: "Agal Boutique - Plus Size Premium Store | Women's Ethnic Wear & Handlooms",
     description:
-      "Handcrafted sarees, kurtis, lehenga sets, and bespoke custom stitching from Tamil Nadu.",
+      "India's premium plus-size women's ethnic wear store offering curated sizes 34 to 56 (XS to 6XL). Handcrafted sarees, pure cotton kurtis & bespoke blouse stitching.",
     images: [
       {
         url: "/logo.png",
@@ -64,8 +69,12 @@ export const metadata = {
     images: ["/logo.png"],
   },
   icons: {
-    icon: "/logo.png",
-    apple: "/logo.png",
+    icon: [
+      { url: "/favicon.png", type: "image/png" },
+      { url: "/icon.png", type: "image/png" },
+    ],
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
   },
 };
 

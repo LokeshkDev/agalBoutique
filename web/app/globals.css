@@ -25,6 +25,36 @@
   scrollbar-width: none;
 }
 
+/* Agal Boutique Custom Theme Scrollbar */
+html {
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: #6e1f5a #faf1f7;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #faf1f7;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #6e1f5a;
+  border-radius: 5px;
+  border: 1.5px solid #faf1f7;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3a1233;
+}
+
+::-webkit-scrollbar-corner {
+  background: #faf1f7;
+}
+
 /* Keyframe Animations for Section Reveals */
 @keyframes sectionFadeInUp {
   0% {

@@ -39,10 +39,13 @@ async function apiFetch(endpoint, options = {}) {
 export async function getProducts(params = {}) {
   const query = new URLSearchParams();
   if (params.category) query.append("category", params.category);
+  if (params.subcategory) query.append("subcategory", params.subcategory);
   if (params.search) query.append("search", params.search);
   if (params.sort) query.append("sort", params.sort);
   if (params.minPrice) query.append("minPrice", params.minPrice);
   if (params.maxPrice) query.append("maxPrice", params.maxPrice);
+  if (params.fabric) query.append("fabric", params.fabric);
+  if (params.size) query.append("size", params.size);
   if (params.page) query.append("page", params.page);
   if (params.limit) query.append("limit", params.limit);
 
@@ -83,6 +86,17 @@ export async function postOrder(orderPayload) {
   });
 }
 export const submitOrderToBackend = postOrder;
+
+export async function getOrder(orderNumber) {
+  return await apiFetch(`/orders/${orderNumber}`);
+}
+
+export async function sendOrderInvoice(orderNumber, payload = {}) {
+  return await apiFetch(`/orders/${orderNumber}/send-invoice`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
 
 // 5. Admin Auth & Management APIs
 export async function adminLogin(username, password) {
@@ -199,13 +213,22 @@ export function normalizeImageUrl(img) {
 
   if (!rawUrl || typeof rawUrl !== "string") return "/logo.png";
   const trimmed = rawUrl.trim();
+
+  // If pointing to localhost / local uploads, remap to Cloudflare R2 public bucket in production or fallback
+  const R2_PUBLIC_FALLBACK = "https://pub-392d2e841ea042c7962ed83ddd3d4ad5.r2.dev/uploads/";
+  if (trimmed.includes("localhost:5000/uploads/") || trimmed.includes("127.0.0.1:5000/uploads/")) {
+    const filename = trimmed.split("/uploads/").pop();
+    return `${R2_PUBLIC_FALLBACK}${filename}`;
+  }
+  if (trimmed.startsWith("/uploads/")) {
+    const filename = trimmed.replace(/^\/uploads\//, "");
+    return `${R2_PUBLIC_FALLBACK}${filename}`;
+  }
+
   if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("data:")) {
     return trimmed;
   }
-  if (trimmed.startsWith("/uploads/")) {
-    const backendOrigin = API_BASE.replace(/\/api\/?$/, "");
-    return `${backendOrigin}${trimmed}`;
-  }
+
   return trimmed || "/logo.png";
 }
 

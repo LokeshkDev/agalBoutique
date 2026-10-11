@@ -1,14 +1,21 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
-import { X, Star, Handbag, Check, ArrowRight } from "@phosphor-icons/react";
+import { X, Star, Handbag, Check, ArrowRight, Sparkle } from "@phosphor-icons/react";
 import { formatPrice, discountPercent, getColorHex } from "@/lib/format";
 import { useCart } from "@/store/cart";
 import { normalizeImageUrl } from "@/lib/api";
 
 export default function QuickViewModal({ product, open, onClose }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const defaultSize =
     product?.sizes?.find((s) => (typeof s === "object" ? parseInt(s.stock, 10) > 0 : true))?.label ||
     (typeof product?.sizes?.[0] === "object" ? product?.sizes?.[0]?.label : product?.sizes?.[0]) ||
@@ -22,6 +29,18 @@ export default function QuickViewModal({ product, open, onClose }) {
   const [selectedImgIdx, setSelectedImgIdx] = useState(0);
   const [sizeError, setSizeError] = useState(false);
   const [addedSuccess, setAddedSuccess] = useState(false);
+  const [stockAlert, setStockAlert] = useState({ open: false, title: "", message: "" });
+
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
 
   useEffect(() => {
     if (open && product) {
@@ -40,7 +59,7 @@ export default function QuickViewModal({ product, open, onClose }) {
 
   const addItem = useCart((s) => s.add);
 
-  if (!open || !product) return null;
+  if (!open || !product || !mounted) return null;
 
   const discount = discountPercent(product.price, product.mrp);
   const currentImg = normalizeImageUrl(product.images?.[selectedImgIdx] || product.images?.[0]);
@@ -60,7 +79,17 @@ export default function QuickViewModal({ product, open, onClose }) {
   const isOutOfStock = currentStock <= 0;
 
   const decrementQty = () => setQty((prev) => Math.max(1, prev - 1));
-  const incrementQty = () => setQty((prev) => Math.min(10, prev + 1));
+  const incrementQty = () => {
+    if (currentStock === 1) {
+      setStockAlert({
+        open: true,
+        title: "Only 1 Item Available",
+        message: `Only 1 piece is in stock for size ${selectedSize || defaultSize}. You cannot add more than 1 item.`,
+      });
+      return;
+    }
+    setQty((prev) => Math.min(Math.min(10, currentStock), prev + 1));
+  };
 
   const handleAddToCart = () => {
     const finalSize =
@@ -69,6 +98,46 @@ export default function QuickViewModal({ product, open, onClose }) {
       "Free Size";
 
     setSizeError(false);
+
+    // Check if item has only 1 qty in stock
+    const cartItems = useCart.getState().items;
+    const existingInCart = cartItems.find(
+      (item) =>
+        String(item.id) === String(product.id) &&
+        String(item.size) === String(finalSize) &&
+        (!selectedColor || String(item.color).toLowerCase() === String(selectedColor).toLowerCase())
+    );
+
+    if (currentStock === 1) {
+      if (existingInCart && existingInCart.qty >= 1) {
+        setStockAlert({
+          open: true,
+          title: "Only 1 Item Available",
+          message: `There is only 1 item in stock for size ${finalSize}, and it is already in your shopping bag!`,
+        });
+        return;
+      }
+
+      addItem({
+        id: product.id,
+        name: product.name,
+        slug: product.slug,
+        price: product.price,
+        mrp: product.mrp,
+        size: finalSize,
+        color: selectedColor || product.colors?.[0] || "",
+        qty: 1,
+        image: normalizeImageUrl(product.images?.[0]),
+        images: product.images,
+      });
+
+      setStockAlert({
+        open: true,
+        title: "Only 1 Item Left in Stock!",
+        message: `Hurry! There is only 1 item remaining in stock for size ${finalSize}. We have reserved the last available piece in your shopping bag.`,
+      });
+      return;
+    }
 
     addItem({
       id: product.id,
@@ -90,9 +159,9 @@ export default function QuickViewModal({ product, open, onClose }) {
     }, 400);
   };
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-6 bg-black/75 backdrop-blur-sm transition-opacity duration-200 animate-fadeIn"
+      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-6 bg-black/65 backdrop-blur-xs transition-opacity duration-200 animate-fadeIn"
       role="dialog"
       aria-modal="true"
       onClick={onClose}
@@ -213,18 +282,6 @@ export default function QuickViewModal({ product, open, onClose }) {
                   ✓ Free Express Delivery Across India · Cash on Delivery Available
                 </p>
               </div>
-
-              {/* Fabric & Material Note */}
-              {(product.fabric || product.description) && (
-                <div className="text-xs text-gray-600 bg-white p-3 rounded-xl border border-gray-200 space-y-1">
-                  {product.fabric && (
-                    <p><strong className="text-gray-900 font-bold">Fabric & Material:</strong> {product.fabric}</p>
-                  )}
-                  {product.description && (
-                    <p className="line-clamp-2 leading-relaxed text-gray-500">{product.description}</p>
-                  )}
-                </div>
-              )}
 
               {/* Color Swatches */}
               {product.colors?.length > 0 && (
@@ -453,6 +510,58 @@ export default function QuickViewModal({ product, open, onClose }) {
           </Link>
         </div>
       </div>
-    </div>
+
+      {/* THEME DESIGNED STOCK ALERT POPUP MODAL */}
+      {stockAlert.open && (
+        <div className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-purple-200 text-center space-y-4 font-sans animate-scale-in relative">
+            <button
+              type="button"
+              onClick={() => setStockAlert({ open: false, title: "", message: "" })}
+              className="absolute right-3.5 top-3.5 text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 cursor-pointer"
+              aria-label="Close alert"
+            >
+              <X size={18} weight="bold" />
+            </button>
+
+            <div className="w-14 h-14 rounded-full bg-purple-50 text-plum mx-auto flex items-center justify-center border border-purple-200">
+              <Sparkle size={28} weight="fill" className="text-amber-500" />
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="text-lg font-black text-gray-900 tracking-tight">
+                {stockAlert.title}
+              </h3>
+              <p className="text-xs sm:text-sm text-gray-600 font-medium leading-relaxed">
+                {stockAlert.message}
+              </p>
+            </div>
+
+            <div className="pt-2 flex flex-col sm:flex-row gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setStockAlert({ open: false, title: "", message: "" });
+                  onClose();
+                  useCart.getState().openCart();
+                }}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-plum hover:bg-plum-900 text-white text-xs font-bold transition-colors shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <Handbag size={16} weight="bold" />
+                <span>View In Bag</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setStockAlert({ open: false, title: "", message: "" })}
+                className="py-2.5 px-4 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 text-xs font-bold transition-colors cursor-pointer"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>,
+    document.body
   );
 }

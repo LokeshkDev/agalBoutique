@@ -179,7 +179,6 @@ export default async function ProductPage({ params }) {
                   {product.fabric && <li><strong>Fabric:</strong> {product.fabric}</li>}
                   {product.care && <li><strong>Care Instructions:</strong> {product.care}</li>}
                   {product.occasion && <li><strong>Occasion:</strong> {Array.isArray(product.occasion) ? product.occasion.join(", ") : product.occasion}</li>}
-                  <li><strong>Stitching:</strong> Handcrafted boutique quality from Tamil Nadu</li>
                 </ul>
               </Accordion>
 

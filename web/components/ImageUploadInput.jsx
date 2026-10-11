@@ -1,10 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { UploadSimple, CheckCircle, Spinner, Image as ImageIcon } from "@phosphor-icons/react";
+import { UploadSimple, CheckCircle, Spinner, Image as ImageIcon, Trash, X } from "@phosphor-icons/react";
 import { adminUploadImage, getResolvedImageUrl } from "@/lib/api";
 
-export default function ImageUploadInput({ label = "Image", value = "", onChange, recommendedSize = "" }) {
+export default function ImageUploadInput({
+  label = "Image",
+  value = "",
+  onChange,
+  onRemove,
+  recommendedSize = "",
+  placeholder = "",
+}) {
   const [uploading, setUploading] = useState(false);
   const [uploadStats, setUploadStats] = useState(null);
   const [error, setError] = useState("");
@@ -31,6 +38,16 @@ export default function ImageUploadInput({ label = "Image", value = "", onChange
     } else {
       setError(res?.message || "Upload failed. Please try again.");
     }
+  };
+
+  const handleClearImage = () => {
+    if (onRemove) {
+      onRemove();
+    } else {
+      onChange("");
+    }
+    setUploadStats(null);
+    setError("");
   };
 
   return (
@@ -69,16 +86,45 @@ export default function ImageUploadInput({ label = "Image", value = "", onChange
           </label>
 
           <span className="text-[11px] text-gray-400 font-medium">OR paste URL</span>
+
+          {value && (
+            <button
+              type="button"
+              onClick={handleClearImage}
+              className="ml-auto flex items-center gap-1 px-2.5 py-1.5 text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg text-xs font-bold cursor-pointer transition-colors"
+              title="Delete this image"
+            >
+              <Trash size={14} />
+              <span>Delete</span>
+            </button>
+          )}
         </div>
 
         {/* Text Input for URL preview */}
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="https://... or click Upload button above"
-          className="w-full h-9 px-3 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-plum font-mono"
-        />
+        <div className="relative">
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={
+              placeholder ||
+              (recommendedSize
+                ? `e.g. ${recommendedSize} image URL or upload above`
+                : "https://... or click Upload button above")
+            }
+            className="w-full h-9 pl-3 pr-8 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-plum font-mono"
+          />
+          {value && (
+            <button
+              type="button"
+              onClick={handleClearImage}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-600 cursor-pointer p-0.5"
+              title="Clear Image"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
 
         {/* Optimization Stats Badge */}
         {uploadStats && (
@@ -101,21 +147,33 @@ export default function ImageUploadInput({ label = "Image", value = "", onChange
           </div>
         )}
 
-        {/* Image Preview */}
+        {/* Image Preview with Delete Option */}
         {value && (
-          <div className="flex items-center gap-3 p-2 bg-gray-50 border border-gray-200 rounded-lg">
-            <img
-              src={getResolvedImageUrl(value)}
-              alt="Preview"
-              className="w-12 h-12 object-cover rounded bg-white border border-gray-200 shrink-0"
-              onError={(e) => {
-                e.target.style.display = "none";
-              }}
-            />
-            <div className="truncate text-[11px]">
-              <span className="font-semibold text-gray-700 block">Current Image URL:</span>
-              <span className="text-gray-500 font-mono truncate block">{value}</span>
+          <div className="flex items-center justify-between gap-3 p-2 bg-gray-50 border border-gray-200 rounded-lg">
+            <div className="flex items-center gap-3 overflow-hidden">
+              <img
+                src={getResolvedImageUrl(value)}
+                alt="Preview"
+                className="w-12 h-12 object-cover rounded bg-white border border-gray-200 shrink-0"
+                onError={(e) => {
+                  e.target.style.display = "none";
+                }}
+              />
+              <div className="truncate text-[11px]">
+                <span className="font-semibold text-gray-700 block">Current Image URL:</span>
+                <span className="text-gray-500 font-mono truncate block">{value}</span>
+              </div>
             </div>
+
+            <button
+              type="button"
+              onClick={handleClearImage}
+              className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg text-xs font-bold flex items-center gap-1 shrink-0 transition-colors cursor-pointer"
+              title="Delete / Remove this image"
+            >
+              <Trash size={14} />
+              <span>Remove</span>
+            </button>
           </div>
         )}
       </div>

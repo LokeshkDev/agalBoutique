@@ -3,7 +3,7 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { X } from "@phosphor-icons/react";
 
-export default function Sheet({ open, onClose, title, children }) {
+export default function Sheet({ open, onClose, title, side = "right", children }) {
   const sheetRef = useRef(null);
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
@@ -72,6 +72,8 @@ export default function Sheet({ open, onClose, title, children }) {
 
   if (!mounted) return null;
 
+  const isLeft = side === "left";
+
   return (
     <div
       className="fixed inset-0 z-[100]"
@@ -91,19 +93,29 @@ export default function Sheet({ open, onClose, title, children }) {
       {/* Drawer / Bottom Sheet Container */}
       <div
         ref={sheetRef}
-        className={`fixed inset-x-0 bottom-0 max-h-[88vh] rounded-t-[20px] md:rounded-none md:max-h-none md:inset-y-0 md:right-0 md:left-auto md:w-[440px] md:h-full bg-white text-gray-900 flex flex-col shadow-2xl z-10 transition-transform duration-250 ease-out ${
+        className={`fixed ${
+          isLeft
+            ? "inset-y-0 left-0 right-auto w-[85vw] max-w-[380px] sm:w-[420px] h-full"
+            : "inset-x-0 bottom-0 max-h-[88vh] rounded-t-[20px] md:rounded-none md:max-h-none md:inset-y-0 md:right-0 md:left-auto md:w-[440px] md:h-full"
+        } bg-white text-gray-900 flex flex-col shadow-2xl z-10 transition-transform duration-250 ease-out ${
           visible
-            ? "translate-y-0 md:translate-y-0 md:translate-x-0"
+            ? isLeft
+              ? "translate-x-0"
+              : "translate-y-0 md:translate-y-0 md:translate-x-0"
+            : isLeft
+            ? "-translate-x-full"
             : "translate-y-full md:translate-y-0 md:translate-x-full"
         }`}
       >
-        {/* Mobile drag handle */}
-        <div
-          className="md:hidden flex justify-center pt-3 pb-1"
-          aria-hidden="true"
-        >
-          <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
-        </div>
+        {/* Mobile drag handle (only for bottom sheet on right side) */}
+        {!isLeft && (
+          <div
+            className="md:hidden flex justify-center pt-3 pb-1"
+            aria-hidden="true"
+          >
+            <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
+          </div>
+        )}
 
         {/* Drawer Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-white shrink-0">

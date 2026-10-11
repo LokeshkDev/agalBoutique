@@ -1,13 +1,34 @@
 import { pool, isConnected } from "../config/db.js";
 import { seedProducts } from "../seed/seedData.js";
 
+// Ensure subcategory column exists in remote MySQL products table
+let isProductSchemaChecked = false;
+async function ensureProductSchema() {
+  if (isProductSchemaChecked || !pool || !isConnected) return;
+  try {
+    const [cols] = await pool.query("SHOW COLUMNS FROM products LIKE 'subcategory'");
+    if (cols.length === 0) {
+      await pool.query("ALTER TABLE products ADD COLUMN subcategory VARCHAR(255) DEFAULT NULL");
+      console.log("[DB] Added subcategory column to products table");
+    }
+    isProductSchemaChecked = true;
+  } catch (err) {
+    console.error("[DB Schema Check] products subcategory column notice:", err.message);
+  }
+}
+
 // GET /api/products
 export async function getProducts(req, res) {
   try {
+    await ensureProductSchema();
+
     const {
       category,
+      subcategory,
       search,
       sort,
+      fabric,
+      size,
       minPrice,
       maxPrice,
       page = 1,
@@ -21,7 +42,27 @@ export async function getProducts(req, res) {
       let filtered = [...seedProducts];
       if (category) {
         filtered = filtered.filter(
-          (p) => p.category.toLowerCase() === category.toLowerCase()
+          (p) => p.category?.toLowerCase() === category.toLowerCase()
+        );
+      }
+      if (subcategory) {
+        filtered = filtered.filter(
+          (p) => p.subcategory?.toLowerCase() === subcategory.toLowerCase()
+        );
+      }
+      if (fabric) {
+        filtered = filtered.filter((p) =>
+          p.fabric?.toLowerCase().includes(fabric.toLowerCase())
+        );
+      }
+      if (size) {
+        filtered = filtered.filter((p) =>
+          Array.isArray(p.sizes) &&
+          p.sizes.some(
+            (s) =>
+              (typeof s === "string" ? s : s?.label)?.toLowerCase() ===
+              size.toLowerCase()
+          )
         );
       }
       if (search) {
@@ -29,8 +70,8 @@ export async function getProducts(req, res) {
         filtered = filtered.filter(
           (p) =>
             p.name.toLowerCase().includes(q) ||
-            p.description.toLowerCase().includes(q) ||
-            p.fabric.toLowerCase().includes(q)
+            p.description?.toLowerCase().includes(q) ||
+            p.fabric?.toLowerCase().includes(q)
         );
       }
       if (sort === "price_asc") filtered.sort((a, b) => a.price - b.price);
@@ -52,6 +93,21 @@ export async function getProducts(req, res) {
     if (category) {
       whereClause += " AND LOWER(category_name) = LOWER(?)";
       queryParams.push(category);
+    }
+
+    if (subcategory) {
+      whereClause += " AND LOWER(subcategory) = LOWER(?)";
+      queryParams.push(subcategory);
+    }
+
+    if (fabric) {
+      whereClause += " AND LOWER(fabric) LIKE LOWER(?)";
+      queryParams.push(`%${fabric}%`);
+    }
+
+    if (size) {
+      whereClause += " AND LOWER(sizes) LIKE LOWER(?)";
+      queryParams.push(`%${size}%`);
     }
 
     if (search) {
@@ -92,6 +148,7 @@ export async function getProducts(req, res) {
       slug: r.slug,
       name: r.name,
       category: r.category_name,
+      subcategory: r.subcategory || null,
       description: r.description,
       fabric: r.fabric,
       care: r.care,
@@ -147,6 +204,7 @@ export async function getProductBySlug(req, res) {
       slug: r.slug,
       name: r.name,
       category: r.category_name,
+      subcategory: r.subcategory || null,
       description: r.description,
       fabric: r.fabric,
       care: r.care,
@@ -175,6 +233,7 @@ export async function createProduct(req, res) {
       name,
       slug,
       category,
+      subcategory,
       description,
       fabric,
       care,
@@ -198,6 +257,7 @@ export async function createProduct(req, res) {
       slug: generatedSlug,
       name,
       category,
+      subcategory: subcategory || null,
       description: description || "",
       fabric: fabric || "",
       care: care || "",
@@ -222,12 +282,13 @@ export async function createProduct(req, res) {
 
     if (pool && isConnected) {
       await pool.query(
-        `INSERT INTO products (id, slug, name, category_name, description, fabric, care, occasion, price, mrp, sizes, colors, images, rating_avg, rating_count, is_new, is_bestseller)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `INSERT INTO products (id, slug, name, category_name, subcategory, description, fabric, care, occasion, price, mrp, sizes, colors, images, rating_avg, rating_count, is_new, is_bestseller)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE
            slug = VALUES(slug),
            name = VALUES(name),
            category_name = VALUES(category_name),
+           subcategory = VALUES(subcategory),
            description = VALUES(description),
            fabric = VALUES(fabric),
            care = VALUES(care),
@@ -246,6 +307,7 @@ export async function createProduct(req, res) {
           generatedSlug,
           name,
           category,
+          subcategory || null,
           description || "",
           fabric || "",
           care || "",
@@ -282,6 +344,7 @@ export async function updateProduct(req, res) {
       name,
       slug,
       category,
+      subcategory,
       description,
       fabric,
       care,
@@ -308,6 +371,7 @@ export async function updateProduct(req, res) {
         name: name || seedProducts[idx].name,
         slug: updatedSlug,
         category: category || seedProducts[idx].category,
+        subcategory: subcategory !== undefined ? subcategory : seedProducts[idx].subcategory,
         description: description !== undefined ? description : seedProducts[idx].description,
         fabric: fabric !== undefined ? fabric : seedProducts[idx].fabric,
         care: care !== undefined ? care : seedProducts[idx].care,
@@ -332,6 +396,7 @@ export async function updateProduct(req, res) {
           name = ?,
           slug = ?,
           category_name = ?,
+          subcategory = ?,
           description = ?,
           fabric = ?,
           care = ?,
@@ -351,6 +416,7 @@ export async function updateProduct(req, res) {
           name,
           updatedSlug,
           category,
+          subcategory !== undefined ? subcategory : null,
           description || "",
           fabric || "",
           care || "",
