@@ -64,6 +64,7 @@ export default function Header() {
 
   // Storefront Desktop Nav Drag-to-Swipe
   const desktopNavRef = useRef(null);
+  const desktopNavOffsetLeftRef = useRef(0);
   const [isDraggingDesktopNav, setIsDraggingDesktopNav] = useState(false);
   const [navStartX, setNavStartX] = useState(0);
   const [navScrollLeft, setNavScrollLeft] = useState(0);
@@ -71,7 +72,9 @@ export default function Header() {
   const handleNavMouseDown = (e) => {
     if (!desktopNavRef.current) return;
     setIsDraggingDesktopNav(true);
-    setNavStartX(e.pageX - desktopNavRef.current.offsetLeft);
+    const offset = desktopNavRef.current.offsetLeft;
+    desktopNavOffsetLeftRef.current = offset;
+    setNavStartX(e.pageX - offset);
     setNavScrollLeft(desktopNavRef.current.scrollLeft);
   };
   const handleNavMouseLeave = () => setIsDraggingDesktopNav(false);
@@ -79,13 +82,14 @@ export default function Header() {
   const handleNavMouseMove = (e) => {
     if (!isDraggingDesktopNav || !desktopNavRef.current) return;
     e.preventDefault();
-    const x = e.pageX - desktopNavRef.current.offsetLeft;
+    const x = e.pageX - desktopNavOffsetLeftRef.current;
     const walk = (x - navStartX) * 1.5;
     desktopNavRef.current.scrollLeft = navScrollLeft - walk;
   };
 
   // Storefront Mobile Nav Drag-to-Swipe
   const mobileNavRef = useRef(null);
+  const mobNavOffsetLeftRef = useRef(0);
   const [isDraggingMobileNav, setIsDraggingMobileNav] = useState(false);
   const [mobStartX, setMobStartX] = useState(0);
   const [mobScrollLeft, setMobScrollLeft] = useState(0);
@@ -93,7 +97,9 @@ export default function Header() {
   const handleMobMouseDown = (e) => {
     if (!mobileNavRef.current) return;
     setIsDraggingMobileNav(true);
-    setMobStartX(e.pageX - mobileNavRef.current.offsetLeft);
+    const offset = mobileNavRef.current.offsetLeft;
+    mobNavOffsetLeftRef.current = offset;
+    setMobStartX(e.pageX - offset);
     setMobScrollLeft(mobileNavRef.current.scrollLeft);
   };
   const handleMobMouseLeave = () => setIsDraggingMobileNav(false);
@@ -101,7 +107,7 @@ export default function Header() {
   const handleMobMouseMove = (e) => {
     if (!isDraggingMobileNav || !mobileNavRef.current) return;
     e.preventDefault();
-    const x = e.pageX - mobileNavRef.current.offsetLeft;
+    const x = e.pageX - mobNavOffsetLeftRef.current;
     const walk = (x - mobStartX) * 1.5;
     mobileNavRef.current.scrollLeft = mobScrollLeft - walk;
   };
@@ -111,8 +117,15 @@ export default function Header() {
   }, [pathname]);
 
   useEffect(() => {
+    let ticking = false;
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          setIsScrolled(window.scrollY > 20);
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
     handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });

@@ -15,16 +15,18 @@ export async function generateMetadata({ searchParams }) {
   const description =
     "Explore our full catalogue of authentic South Indian handloom sarees, cambric cotton kurtis, party lehengas, and custom-stitched blouses.";
 
+  const canonicalUrl = category ? `/shop?category=${encodeURIComponent(category)}` : "/shop";
+
   return {
     title,
     description,
     alternates: {
-      canonical: "/shop",
+      canonical: canonicalUrl,
     },
     openGraph: {
       title,
       description,
-      url: "https://www.agalboutique.com/shop",
+      url: `https://www.agalboutique.com${canonicalUrl}`,
     },
   };
 }
@@ -40,27 +42,27 @@ export default async function ShopPage({ searchParams }) {
   const page = parseInt(params?.page || "1", 10);
   const limit = 16;
 
-  // Fetch categories from DB API
-  const catRes = await getCategories();
-  const categoriesList = catRes?.categories || [];
-
   const isNew = params?.isNew !== undefined ? params.isNew : (params?.badge === "new" ? true : undefined);
   const isBestseller = params?.isBestseller !== undefined ? params.isBestseller : (params?.badge === "bestseller" ? true : undefined);
 
-  // Fetch products from DB API
-  const prodRes = await getProducts({
-    category,
-    subcategory,
-    search,
-    sort,
-    fabric,
-    size,
-    isNew,
-    isBestseller,
-    page,
-    limit,
-  });
+  // Parallel concurrent data fetching to eliminate sequential waterfalls
+  const [catRes, prodRes] = await Promise.all([
+    getCategories(),
+    getProducts({
+      category,
+      subcategory,
+      search,
+      sort,
+      fabric,
+      size,
+      isNew,
+      isBestseller,
+      page,
+      limit,
+    }),
+  ]);
 
+  const categoriesList = catRes?.categories || [];
   const productsList = prodRes?.products || [];
   const total = prodRes?.total || productsList.length;
   const totalPages = Math.ceil(total / limit) || 1;

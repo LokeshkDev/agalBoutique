@@ -5,10 +5,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { getCategories } from "@/lib/api";
 
-export default function CategoryRow() {
-  const [categories, setCategories] = useState([]);
+export default function CategoryRow({ initialCategories = [] }) {
+  const [categories, setCategories] = useState(initialCategories);
 
   useEffect(() => {
+    if (initialCategories && initialCategories.length > 0) return;
     async function loadData() {
       const res = await getCategories();
       if (res?.success && Array.isArray(res.categories)) {
@@ -16,7 +17,7 @@ export default function CategoryRow() {
       }
     }
     loadData();
-  }, []);
+  }, [initialCategories]);
 
   if (categories.length === 0) return null;
 
@@ -60,6 +61,7 @@ export default function CategoryRow() {
                     src={cat.image}
                     alt={cat.name}
                     fill
+                    loading="lazy"
                     sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, 165px"
                     className="object-cover object-top transition-transform duration-300 group-hover:scale-110"
                   />

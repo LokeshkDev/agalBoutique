@@ -18,7 +18,7 @@ async function apiFetch(endpoint, options = {}) {
 
   try {
     const res = await fetch(url, {
-      cache: "no-store",
+      cache: options.cache !== undefined ? options.cache : (options.next ? undefined : "no-store"),
       ...options,
       headers: {
         ...defaultHeaders,
@@ -219,15 +219,20 @@ export function normalizeImageUrl(img) {
     return "/logo.png";
   }
 
-  // If pointing to localhost / local uploads, remap to Cloudflare R2 public bucket in production or fallback
+  // Cloudflare R2 Public CDN domain for Agal Boutique
   const R2_PUBLIC_FALLBACK = "https://pub-392d2e841ea042c7962ed83ddd3d4ad5.r2.dev/uploads/";
-  if (trimmed.includes("localhost:5000/uploads/") || trimmed.includes("127.0.0.1:5000/uploads/")) {
-    const filename = trimmed.split("/uploads/").pop();
-    return `${R2_PUBLIC_FALLBACK}${filename}`;
+
+  // 1. If already on Cloudflare R2 CDN, return directly
+  if (trimmed.includes(".r2.dev") || trimmed.includes(".cloudflarestorage.com")) {
+    return trimmed;
   }
-  if (trimmed.startsWith("/uploads/")) {
-    const filename = trimmed.replace(/^\/uploads\//, "");
-    return `${R2_PUBLIC_FALLBACK}${filename}`;
+
+  // 2. Remap ANY /uploads/ path (from onrender.com, localhost, or relative /uploads/) to Cloudflare R2 CDN
+  if (trimmed.includes("/uploads/")) {
+    const filename = trimmed.split("/uploads/").pop();
+    if (filename) {
+      return `${R2_PUBLIC_FALLBACK}${filename}`;
+    }
   }
 
   if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("data:")) {

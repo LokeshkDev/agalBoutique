@@ -57,12 +57,17 @@ const DEFAULT_TESTIMONIALS = [
   },
 ];
 
-export default function TestimonialsSlider() {
-  const [testimonials, setTestimonials] = useState(DEFAULT_TESTIMONIALS);
+export default function TestimonialsSlider({ initialTestimonials }) {
+  const [testimonials, setTestimonials] = useState(
+    initialTestimonials && initialTestimonials.length > 0
+      ? initialTestimonials
+      : DEFAULT_TESTIMONIALS
+  );
   const [currentIdx, setCurrentIdx] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
+    if (initialTestimonials && initialTestimonials.length > 0) return;
     async function loadTestimonials() {
       const res = await getCmsSettings();
       if (res?.success && res.settings?.testimonials && Array.isArray(res.settings.testimonials) && res.settings.testimonials.length > 0) {
@@ -70,7 +75,7 @@ export default function TestimonialsSlider() {
       }
     }
     loadTestimonials();
-  }, []);
+  }, [initialTestimonials]);
 
   // Auto-scroll on slider
   useEffect(() => {

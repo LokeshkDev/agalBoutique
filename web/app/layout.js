@@ -78,8 +78,6 @@ export const metadata = {
   },
 };
 
-import PageLoader from "@/components/PageLoader";
-
 export default function RootLayout({ children }) {
   const storeSchema = {
     "@context": "https://schema.org",
@@ -101,10 +99,16 @@ export default function RootLayout({ children }) {
   return (
     <html
       lang="en-IN"
+      data-scroll-behavior="smooth"
       className={`${roboto.variable} ${roboto.className} ${notoTamil.variable}`}
     >
+      <head>
+        <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://images.unsplash.com" />
+        <link rel="preconnect" href="https://images.pexels.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://images.pexels.com" />
+      </head>
       <body className={`${roboto.className} min-h-screen flex flex-col bg-white text-ink antialiased pb-[64px] lg:pb-0 font-sans`}>
-        <PageLoader />
         <JsonLd data={storeSchema} />
         <Header />
         <main className="flex-1">{children}</main>

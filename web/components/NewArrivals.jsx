@@ -5,10 +5,11 @@ import Link from "next/link";
 import ProductCard from "@/components/ProductCard";
 import { getProducts } from "@/lib/api";
 
-export default function NewArrivals() {
-  const [products, setProducts] = useState([]);
+export default function NewArrivals({ initialProducts = [] }) {
+  const [products, setProducts] = useState(initialProducts);
 
   useEffect(() => {
+    if (initialProducts && initialProducts.length > 0) return;
     async function loadData() {
       // Prioritize products marked as Fresh Arrivals & New Weaves (isNew = true)
       const res = await getProducts({ isNew: true, limit: 12 });
@@ -22,7 +23,7 @@ export default function NewArrivals() {
       }
     }
     loadData();
-  }, []);
+  }, [initialProducts]);
 
   if (products.length === 0) return null;
 
@@ -55,7 +56,6 @@ export default function NewArrivals() {
             <ProductCard
               key={product.id}
               product={product}
-              priority={idx < 2}
             />
           ))}
         </div>

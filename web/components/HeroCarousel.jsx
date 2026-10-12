@@ -14,6 +14,7 @@ export default function HeroCarousel({ initialSlides = [] }) {
   const touchEndX = useRef(0);
 
   useEffect(() => {
+    if (initialSlides && initialSlides.length > 0) return;
     async function loadCmsSlides() {
       const res = await getCmsSettings();
       if (res?.success && Array.isArray(res.settings?.hero_slides)) {
@@ -21,7 +22,7 @@ export default function HeroCarousel({ initialSlides = [] }) {
       }
     }
     loadCmsSlides();
-  }, []);
+  }, [initialSlides]);
 
   useEffect(() => {
     if (isPaused || slides.length === 0) return;
@@ -90,6 +91,8 @@ export default function HeroCarousel({ initialSlides = [] }) {
                   alt={slide.title || "Agal Boutique Banner"}
                   fill
                   priority={idx === 0}
+                  fetchPriority={idx === 0 ? "high" : "auto"}
+                  loading={idx === 0 ? "eager" : "lazy"}
                   sizes="100vw"
                   className="object-cover object-center w-full h-full"
                 />

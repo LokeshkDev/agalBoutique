@@ -6,10 +6,11 @@ import ProductCard from "@/components/ProductCard";
 import { getProducts } from "@/lib/api";
 import { Tag } from "@phosphor-icons/react";
 
-export default function BestSellers() {
-  const [bestSellers, setBestSellers] = useState([]);
+export default function BestSellers({ initialProducts = [] }) {
+  const [bestSellers, setBestSellers] = useState(initialProducts);
 
   useEffect(() => {
+    if (initialProducts && initialProducts.length > 0) return;
     async function loadData() {
       // Prioritize products marked as Most Loved Bestsellers (isBestseller = true)
       const res = await getProducts({ isBestseller: true, limit: 12 });
@@ -23,7 +24,7 @@ export default function BestSellers() {
       }
     }
     loadData();
-  }, []);
+  }, [initialProducts]);
 
   if (bestSellers.length === 0) return null;
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Heart, Star, Eye } from "@phosphor-icons/react";
@@ -16,7 +16,7 @@ import { normalizeImageUrl } from "@/lib/api";
  * - Top-right Wishlist heart + Quick View eye icon popup.
  * - Green rating badge, color dots on image, large bold price row, discount %, and Free Delivery tag.
  */
-export default function ProductCard({ product, priority = false }) {
+function ProductCard({ product, priority = false }) {
   const [wishlisted, setWishlisted] = useState(false);
   const [quickViewOpen, setQuickViewOpen] = useState(false);
 
@@ -42,7 +42,7 @@ export default function ProductCard({ product, priority = false }) {
 
   return (
     <>
-      <article className="group relative flex flex-col bg-white rounded-[5px] transition-shadow duration-200 hover:shadow-card p-1 sm:p-2">
+      <article className="product-card-optimize group relative flex flex-col bg-white rounded-[5px] transition-shadow duration-200 hover:shadow-card p-1 sm:p-2">
         {/* Clickable Image Container */}
         <div className="relative aspect-[3/4] w-full rounded-[5px] overflow-hidden bg-gray-50">
           <Link href={`/product/${slug}`} className="relative block w-full h-full">
@@ -141,12 +141,16 @@ export default function ProductCard({ product, priority = false }) {
         </div>
       </article>
 
-      {/* Quick View Mobile/Desktop Popup */}
-      <QuickViewModal
-        product={product}
-        open={quickViewOpen}
-        onClose={() => setQuickViewOpen(false)}
-      />
+      {/* Quick View Mobile/Desktop Popup - Lazy mounted only when open */}
+      {quickViewOpen && (
+        <QuickViewModal
+          product={product}
+          open={quickViewOpen}
+          onClose={() => setQuickViewOpen(false)}
+        />
+      )}
     </>
   );
 }
+
+export default memo(ProductCard);

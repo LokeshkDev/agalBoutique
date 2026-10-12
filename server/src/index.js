@@ -93,8 +93,14 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// Serve Uploaded Images statically if stored locally
-app.use("/uploads", express.static(path.join(__dirname, "../public/uploads")));
+// Serve Uploaded Images statically with long-term cache headers (30 days)
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "../public/uploads"), {
+    maxAge: "30d",
+    immutable: true,
+  })
+);
 
 // API Routes
 app.use("/api/products", productRoutes);

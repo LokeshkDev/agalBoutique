@@ -37,6 +37,7 @@ export default function ProductGallery({ images = [], name }) {
                 src={thumbUrl}
                 alt={typeof img === "object" ? (img.alt || `${name} thumbnail ${idx + 1}`) : `${name} thumbnail ${idx + 1}`}
                 fill
+                loading="lazy"
                 sizes="80px"
                 className="object-cover"
               />

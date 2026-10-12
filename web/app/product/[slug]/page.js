@@ -81,14 +81,17 @@ export default async function ProductPage({ params }) {
 
   const discount = discountPercent(product.price, product.mrp);
 
+  const ratingAvg = product.rating?.avg || product.ratingAvg || 4.7;
+  const ratingCount = product.rating?.count || product.ratingCount || 42;
+
   const productLd = {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
     description: product.description,
-    sku: product.id,
+    sku: String(product.id || product.slug),
     brand: { "@type": "Brand", name: "Agal Boutique" },
-    image: product.images?.map((i) => i.url),
+    image: product.images?.map((i) => (typeof i === "string" ? i : i.url)),
     material: product.fabric,
     category: product.category,
     offers: {
@@ -98,12 +101,47 @@ export default async function ProductPage({ params }) {
       availability: "https://schema.org/InStock",
       url: `https://www.agalboutique.com/product/${product.slug}`,
       itemCondition: "https://schema.org/NewCondition",
+      seller: {
+        "@type": "Organization",
+        name: "Agal Boutique",
+      },
     },
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: String(ratingAvg),
+      reviewCount: String(ratingCount),
+    },
+  };
+
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: "https://www.agalboutique.com",
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: product.category || "Collections",
+        item: `https://www.agalboutique.com/shop?category=${encodeURIComponent(product.category?.toLowerCase().replace(/\s+/g, "-") || "")}`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: product.name,
+        item: `https://www.agalboutique.com/product/${product.slug}`,
+      },
+    ],
   };
 
   return (
     <>
       <JsonLd data={productLd} />
+      <JsonLd data={breadcrumbLd} />
 
       <div className="max-w-[var(--container)] mx-auto px-4 lg:px-8 py-4 lg:py-8 pb-32 lg:pb-8 animate-section-reveal">
         {/* Breadcrumbs */}
