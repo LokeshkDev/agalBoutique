@@ -143,7 +143,7 @@ export default async function ProductPage({ params }) {
       <JsonLd data={productLd} />
       <JsonLd data={breadcrumbLd} />
 
-      <div className="max-w-[var(--container)] mx-auto px-4 lg:px-8 py-4 lg:py-8 pb-32 lg:pb-8 animate-section-reveal">
+      <div className="max-w-[var(--container)] mx-auto px-4 lg:px-8 py-4 lg:py-8 pb-8 animate-section-reveal">
         {/* Breadcrumbs */}
         <nav aria-label="Breadcrumbs" className="text-xs text-gray-500 mb-4 font-medium">
           <ol className="flex items-center gap-1.5 flex-wrap">

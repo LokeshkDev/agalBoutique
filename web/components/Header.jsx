@@ -15,10 +15,13 @@ import {
   CaretRight,
   CaretDown,
   Sparkle,
+  ArrowUpRight,
+  CircleNotch,
 } from "@phosphor-icons/react";
 import { useCart } from "@/store/cart";
 import { useShallow } from "zustand/react/shallow";
-import { getCmsSettings, getCategories } from "@/lib/api";
+import { getCmsSettings, getCategories, getProducts, getResolvedImageUrl } from "@/lib/api";
+import { formatPrice, discountPercent } from "@/lib/format";
 import { categories as defaultCategories } from "@/lib/data/categories";
 import Sheet from "@/components/Sheet";
 import AnnouncementBar from "@/components/AnnouncementBar";
@@ -44,6 +47,16 @@ const DEFAULT_MENU_ITEMS = [
   { title: "Contact Us", url: "/contact" },
 ];
 
+const POPULAR_SEARCH_TAGS = [
+  "Sarees",
+  "Kurtis",
+  "Anarkalis",
+  "Blouses",
+  "Lehengas",
+  "Festive Sets",
+  "Cotton",
+];
+
 export default function Header() {
   const router = useRouter();
   const pathname = usePathname();
@@ -59,6 +72,10 @@ export default function Header() {
   const [categoriesList, setCategoriesList] = useState(defaultCategories);
   const [menuDrawerOpen, setMenuDrawerOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchSuggestions, setSearchSuggestions] = useState([]);
+  const [trendingProducts, setTrendingProducts] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const searchContainerRef = useRef(null);
   const [expandedCategory, setExpandedCategory] = useState(null);
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -170,13 +187,84 @@ export default function Header() {
     0
   );
 
+  // Fetch trending/popular products once when search is opened
+  useEffect(() => {
+    if (searchOpen && trendingProducts.length === 0) {
+      getProducts({ limit: 6, isBestseller: true }).then((res) => {
+        if (res?.success && Array.isArray(res.products) && res.products.length > 0) {
+          setTrendingProducts(res.products);
+        } else {
+          getProducts({ limit: 6 }).then((fallback) => {
+            if (fallback?.success && Array.isArray(fallback.products)) {
+              setTrendingProducts(fallback.products);
+            }
+          });
+        }
+      });
+    }
+  }, [searchOpen, trendingProducts.length]);
+
+  // Live search debounce effect for suggestions
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setSearchSuggestions([]);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await getProducts({ search: searchTerm.trim(), limit: 6 });
+        if (res?.success && Array.isArray(res.products)) {
+          setSearchSuggestions(res.products);
+        } else {
+          setSearchSuggestions([]);
+        }
+      } catch (err) {
+        setSearchSuggestions([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Close on Escape or click outside
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && searchOpen) {
+        setSearchOpen(false);
+      }
+    };
+    const handleClickOutside = (e) => {
+      if (
+        searchOpen &&
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(e.target) &&
+        !e.target.closest("button[aria-label='Search Products']")
+      ) {
+        setSearchOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [searchOpen]);
+
   const handleSearch = (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (searchTerm.trim()) {
       router.push(`/shop?search=${encodeURIComponent(searchTerm.trim())}`);
       setSearchOpen(false);
     } else {
       router.push("/shop");
+      setSearchOpen(false);
     }
   };
 
@@ -356,14 +444,18 @@ export default function Header() {
         </ul>
       </div>
 
-      {/* Expandable Search Input Bar (Desktop & Mobile) */}
+      {/* Expandable Search Input Bar with Live Suggested Products (Desktop & Mobile) */}
       {searchOpen && (
-        <div className="border-t border-gray-200 bg-white/95 backdrop-blur-sm p-3 sm:py-3.5 sm:px-6 shadow-md animate-fade-in">
-          <div className="max-w-2xl mx-auto">
+        <div
+          ref={searchContainerRef}
+          className="border-t border-gray-200 bg-white shadow-2xl animate-fade-in relative z-50 transition-all"
+        >
+          <div className="max-w-3xl mx-auto p-3.5 sm:p-5">
             <form onSubmit={handleSearch} className="flex items-center gap-2">
               <div className="relative flex-1">
                 <MagnifyingGlass
-                  size={18}
+                  size={20}
+                  weight="bold"
                   className="absolute left-3.5 top-3 text-gray-400 pointer-events-none"
                 />
                 <input
@@ -371,25 +463,165 @@ export default function Header() {
                   autoFocus
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search Sarees, Kurtis, Blouses, Anarkalis or style code..."
-                  className="w-full h-11 pl-10 pr-4 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-plum focus:ring-1 focus:ring-plum font-sans bg-gray-50/50"
+                  placeholder="Search Sarees, Kurtis, Blouses, Anarkalis or style name..."
+                  className="w-full h-11 pl-10 pr-10 text-xs sm:text-sm border border-gray-300 rounded-xl focus:outline-none focus:border-plum focus:ring-2 focus:ring-plum/20 font-sans bg-gray-50/70 transition-all text-gray-900"
                 />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchTerm("");
+                      setSearchSuggestions([]);
+                    }}
+                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 p-0.5 rounded-full cursor-pointer"
+                    title="Clear search"
+                  >
+                    <X size={16} weight="bold" />
+                  </button>
+                )}
               </div>
               <button
                 type="submit"
-                className="h-11 px-5 bg-plum text-white text-xs sm:text-sm font-bold rounded-lg hover:bg-plum-900 transition-colors cursor-pointer shadow-xs"
+                className="h-11 px-5 bg-plum text-white text-xs sm:text-sm font-bold rounded-xl hover:bg-plum-900 transition-colors cursor-pointer shadow-xs shrink-0"
               >
                 Search
               </button>
               <button
                 type="button"
                 onClick={() => setSearchOpen(false)}
-                className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 cursor-pointer"
+                className="p-2.5 text-gray-400 hover:text-gray-700 rounded-xl hover:bg-gray-100 cursor-pointer shrink-0"
                 title="Close search"
               >
-                <X size={20} />
+                <X size={20} weight="bold" />
               </button>
             </form>
+
+            {/* Popular Search Suggestion Pills */}
+            <div className="flex items-center gap-1.5 sm:gap-2 mt-3 overflow-x-auto no-scrollbar py-1">
+              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider shrink-0 mr-0.5">
+                Popular:
+              </span>
+              {POPULAR_SEARCH_TAGS.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => setSearchTerm(tag)}
+                  className={`text-xs px-2.5 py-1 rounded-full border transition-all shrink-0 cursor-pointer ${
+                    searchTerm.toLowerCase() === tag.toLowerCase()
+                      ? "bg-plum text-white border-plum shadow-2xs font-bold"
+                      : "bg-gray-50 text-gray-700 border-gray-200 hover:border-plum hover:text-plum"
+                  }`}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+
+            {/* Suggested Products Header & Grid */}
+            <div className="mt-3.5 pt-3 border-t border-gray-100">
+              <div className="flex items-center justify-between mb-2.5">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-gray-600 flex items-center gap-1.5">
+                  <Sparkle size={14} weight="fill" className="text-amber-500" />
+                  {searchTerm.trim() ? "Suggested Products" : "Trending & Bestsellers"}
+                </h4>
+                {isSearching && (
+                  <span className="text-xs text-plum font-semibold flex items-center gap-1">
+                    <CircleNotch size={14} className="animate-spin" /> Searching...
+                  </span>
+                )}
+              </div>
+
+              {/* Suggestions Grid */}
+              {(searchTerm.trim() ? searchSuggestions : trendingProducts).length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[50vh] sm:max-h-[380px] overflow-y-auto pr-1">
+                  {(searchTerm.trim() ? searchSuggestions : trendingProducts).map((prod) => {
+                    const rawImg = prod.images?.[0]?.url || prod.images?.[0] || prod.image;
+                    const imgUrl = getResolvedImageUrl(rawImg);
+                    const hasDiscount = prod.mrp && prod.mrp > prod.price;
+                    const discount = hasDiscount ? discountPercent(prod.price, prod.mrp) : 0;
+
+                    return (
+                      <Link
+                        key={prod.id || prod.slug}
+                        href={`/product/${prod.slug}`}
+                        onClick={() => setSearchOpen(false)}
+                        className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition-colors border border-gray-100 hover:border-plum/30 group cursor-pointer bg-white shadow-2xs hover:shadow-xs"
+                      >
+                        {/* Thumbnail */}
+                        <div className="relative w-12 h-15 sm:w-14 sm:h-17 shrink-0 rounded-lg overflow-hidden bg-gray-100 border border-gray-200/60">
+                          <Image
+                            src={imgUrl}
+                            alt={prod.name}
+                            fill
+                            sizes="56px"
+                            className="object-cover object-center group-hover:scale-105 transition-transform duration-300"
+                          />
+                        </div>
+
+                        {/* Product Meta */}
+                        <div className="flex-1 min-w-0">
+                          {prod.category && (
+                            <span className="text-[10px] font-bold text-plum uppercase tracking-wider block mb-0.5 truncate">
+                              {prod.category}
+                            </span>
+                          )}
+                          <p className="text-xs sm:text-sm font-bold text-gray-900 truncate group-hover:text-plum transition-colors">
+                            {prod.name}
+                          </p>
+                          <div className="flex items-baseline gap-1.5 mt-1">
+                            <span className="text-xs sm:text-sm font-extrabold text-plum">
+                              {formatPrice(prod.price)}
+                            </span>
+                            {hasDiscount && (
+                              <>
+                                <span className="text-[11px] text-gray-400 line-through">
+                                  {formatPrice(prod.mrp)}
+                                </span>
+                                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded">
+                                  {discount}% off
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        <ArrowUpRight
+                          size={16}
+                          weight="bold"
+                          className="text-gray-400 group-hover:text-plum group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0 mr-1"
+                        />
+                      </Link>
+                    );
+                  })}
+                </div>
+              ) : !isSearching && searchTerm.trim() ? (
+                <div className="py-8 text-center text-gray-500">
+                  <p className="text-xs sm:text-sm font-medium">
+                    No products found matching &ldquo;<span className="font-bold text-gray-800">{searchTerm}</span>&rdquo;
+                  </p>
+                  <p className="text-[11px] text-gray-400 mt-1">
+                    Try searching for Sarees, Kurtis, Anarkalis, or Blouses.
+                  </p>
+                </div>
+              ) : null}
+
+              {/* View all search results link */}
+              {searchTerm.trim() && (
+                <div className="mt-3 pt-2.5 border-t border-gray-100 flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={handleSearch}
+                    className="text-xs sm:text-sm font-bold text-plum hover:text-plum-900 hover:underline flex items-center gap-1.5 cursor-pointer"
+                  >
+                    View all results for &ldquo;{searchTerm}&rdquo;
+                    <CaretRight size={14} weight="bold" />
+                  </button>
+                  <span className="text-[11px] text-gray-400 hidden sm:inline">
+                    Press <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded text-[10px] font-mono">Enter ↵</kbd>
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

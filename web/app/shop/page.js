@@ -10,16 +10,28 @@ export async function generateMetadata({ searchParams }) {
   const params = await searchParams;
   const category = params?.category || "";
   const title = category
-    ? `${category.charAt(0).toUpperCase() + category.slice(1).replace("-", " ")} Collection | Agal Boutique`
-    : "Shop Handpicked Sarees, Kurtis & Blouses | Agal Boutique";
+    ? `${category.charAt(0).toUpperCase() + category.slice(1).replace(/-/g, " ")} | Plus Size Sets & Tops with Dupatta | Agal Boutique`
+    : "Plus Size Sets, Tops with Dupatta & Full Sets (Sizes 34-56) | Agal Boutique";
   const description =
-    "Explore our full catalogue of authentic South Indian handloom sarees, cambric cotton kurtis, party lehengas, and custom-stitched blouses.";
+    "Shop 100+ varieties of premium quality plus-size ethnic wear, 2-piece & 3-piece full sets, straight cut sets, and tops with dupatta in sizes 34 to 56 with easy availability and cash on delivery.";
 
   const canonicalUrl = category ? `/shop?category=${encodeURIComponent(category)}` : "/shop";
 
   return {
     title,
     description,
+    keywords: [
+      "plus size ethnic wear",
+      "plus size full sets",
+      "tops with dupatta",
+      "top with dupatta 2 piece set",
+      "3 piece full sets",
+      "100+ varieties plus size",
+      "sizes 34 to 56",
+      "premium quality plus size boutique",
+      "easy availability",
+      "Agal Boutique",
+    ],
     alternates: {
       canonical: canonicalUrl,
     },

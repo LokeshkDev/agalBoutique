@@ -75,9 +75,11 @@ export async function getProducts(req, res) {
         const q = search.toLowerCase();
         filtered = filtered.filter(
           (p) =>
-            p.name.toLowerCase().includes(q) ||
+            p.name?.toLowerCase().includes(q) ||
             p.description?.toLowerCase().includes(q) ||
-            p.fabric?.toLowerCase().includes(q)
+            p.fabric?.toLowerCase().includes(q) ||
+            p.category?.toLowerCase().includes(q) ||
+            p.subcategory?.toLowerCase().includes(q)
         );
       }
       if (sort === "price_asc") filtered.sort((a, b) => a.price - b.price);
@@ -136,9 +138,9 @@ export async function getProducts(req, res) {
     }
 
     if (search) {
-      whereClause += " AND (name LIKE ? OR description LIKE ? OR fabric LIKE ?)";
+      whereClause += " AND (name LIKE ? OR description LIKE ? OR fabric LIKE ? OR category_name LIKE ? OR subcategory LIKE ?)";
       const searchPattern = `%${search}%`;
-      queryParams.push(searchPattern, searchPattern, searchPattern);
+      queryParams.push(searchPattern, searchPattern, searchPattern, searchPattern, searchPattern);
     }
 
     if (minPrice) {

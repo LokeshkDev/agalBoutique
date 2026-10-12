@@ -272,20 +272,20 @@ export default function ProductActions({ product }) {
         category={product.category}
       />
 
-      {/* Desktop Main Actions: SINGLE CLEAN ROW with Quantity Stepper + Add to Bag */}
-      <div className="hidden lg:flex items-center gap-3 pt-2">
+      {/* Main Actions: Quantity Stepper + Add to Bag (Visible on Mobile & Desktop next to PIN code section) */}
+      <div className="flex items-center gap-2.5 sm:gap-3 pt-2">
         {/* Quantity Stepper */}
-        <div className="flex items-center border border-gray-300 rounded-[5px] h-12 bg-white px-1 shrink-0">
+        <div className="flex items-center border border-gray-300 rounded-[5px] h-11 sm:h-12 bg-white px-1 shrink-0">
           <button
             type="button"
             onClick={decrementQty}
             disabled={qty <= 1 || isOutOfStock}
             aria-label="Decrease quantity"
-            className="w-8 h-full flex items-center justify-center text-gray-700 hover:text-plum disabled:opacity-30 cursor-pointer font-bold text-base select-none"
+            className="w-7 sm:w-8 h-full flex items-center justify-center text-gray-700 hover:text-plum disabled:opacity-30 cursor-pointer font-bold text-sm sm:text-base select-none"
           >
             -
           </button>
-          <span className="w-8 text-center font-bold text-sm text-gray-900 font-sans select-none">
+          <span className="w-7 sm:w-8 text-center font-bold text-xs sm:text-sm text-gray-900 font-sans select-none">
             {qty}
           </span>
           <button
@@ -293,7 +293,7 @@ export default function ProductActions({ product }) {
             onClick={incrementQty}
             disabled={qty >= 10 || isOutOfStock}
             aria-label="Increase quantity"
-            className="w-8 h-full flex items-center justify-center text-gray-700 hover:text-plum disabled:opacity-30 cursor-pointer font-bold text-base select-none"
+            className="w-7 sm:w-8 h-full flex items-center justify-center text-gray-700 hover:text-plum disabled:opacity-30 cursor-pointer font-bold text-sm sm:text-base select-none"
           >
             +
           </button>
@@ -304,7 +304,7 @@ export default function ProductActions({ product }) {
           type="button"
           onClick={() => handleAddToCart(false)}
           disabled={isOutOfStock}
-          className={`flex-1 h-12 rounded-[5px] font-extrabold text-sm flex items-center justify-center gap-2 shadow-sm transition-all ${
+          className={`flex-1 h-11 sm:h-12 rounded-[5px] font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-all ${
             isOutOfStock
               ? "bg-gray-300 text-gray-500 border border-gray-300 cursor-not-allowed shadow-none"
               : "bg-[#9c27b0] hover:bg-[#8e24aa] text-white cursor-pointer active:scale-98"
@@ -315,48 +315,7 @@ export default function ProductActions({ product }) {
         </button>
       </div>
 
-      {/* Floating/Sticky Mobile Action Bar (Pinned cleanly at bottom on mobile/tablet) */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 px-3 py-2.5 shadow-[0_-4px_20px_rgba(0,0,0,0.12)] flex items-center gap-2 pb-[calc(10px+env(safe-area-inset-bottom))]">
-        {/* Quantity Stepper in Sticky Bar */}
-        <div className="flex items-center border border-gray-300 rounded-[5px] h-10 bg-white px-1 shrink-0">
-          <button
-            type="button"
-            onClick={decrementQty}
-            disabled={qty <= 1 || isOutOfStock}
-            aria-label="Decrease quantity"
-            className="w-7 h-full flex items-center justify-center text-gray-700 font-bold disabled:opacity-30 cursor-pointer text-sm"
-          >
-            -
-          </button>
-          <span className="w-6 text-center font-bold text-xs text-gray-900 font-sans">
-            {qty}
-          </span>
-          <button
-            type="button"
-            onClick={incrementQty}
-            disabled={qty >= 10 || isOutOfStock}
-            aria-label="Increase quantity"
-            className="w-7 h-full flex items-center justify-center text-gray-700 font-bold disabled:opacity-30 cursor-pointer text-sm"
-          >
-            +
-          </button>
-        </div>
 
-        {/* Add to Bag Button in Sticky Bar */}
-        <button
-          type="button"
-          onClick={() => handleAddToCart(false)}
-          disabled={isOutOfStock}
-          className={`flex-1 h-10 rounded-[5px] font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all ${
-            isOutOfStock
-              ? "bg-gray-300 text-gray-500 border border-gray-300 cursor-not-allowed shadow-none"
-              : "bg-[#9c27b0] active:bg-[#8e24aa] text-white cursor-pointer"
-          }`}
-        >
-          <Handbag size={16} weight="bold" />
-          {isOutOfStock ? "Out of Stock" : "Add to Bag"}
-        </button>
-      </div>
 
       {/* THEME DESIGNED STOCK ALERT POPUP MODAL */}
       {stockAlert.open && (

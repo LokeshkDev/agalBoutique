@@ -23,7 +23,7 @@ export default function Footer() {
   return (
     <footer className="bg-[#180e19] border-t border-white/10 text-[#f5eef4] pt-10 pb-24 lg:pb-10 font-sans">
       <div className="max-w-[var(--container)] mx-auto px-4 lg:px-8">
-        {/* Brand Logo - Centered Middle Aligned on Mobile and Desktop */}
+        {/* Brand Logo & Plus Size Specialization Header */}
         <div className="flex flex-col items-center justify-center text-center pb-8 border-b border-white/10">
           <Link
             href="/"
@@ -31,15 +31,38 @@ export default function Footer() {
           >
             <Image
               src="/logo.png"
-              alt="Agal Boutique"
+              alt="Agal Boutique - Plus Size Ethnic Wear Specialist"
               width={160}
               height={52}
               className="h-[46px] w-auto object-contain"
             />
           </Link>
-          <p className="text-xs sm:text-sm text-[#e6d3e1] mt-3 max-w-md font-medium tracking-wide">
-            Handcrafted Elegance · Authentic Weaves · Delivered with Love
+
+          <h3 className="text-sm sm:text-base font-extrabold text-white mt-3.5 tracking-wide">
+            India&apos;s Premier Plus-Size Ethnic Wear Destination · Sizes 34 to 56 (XS to 6XL)
+          </h3>
+          <p className="text-xs sm:text-sm text-[#e6d3e1] mt-1.5 max-w-2xl font-medium leading-relaxed">
+            Specialized in premium quality fabrics, 100+ varieties of sets, 2-piece &amp; 3-piece full sets, and tops with dupatta with easy availability and express delivery across India.
           </p>
+
+          {/* Plus Size & Quality Trust Badges */}
+          <div className="flex flex-wrap items-center justify-center gap-2 mt-4 max-w-3xl">
+            <span className="px-3 py-1 rounded-full bg-white/10 text-white text-[11px] sm:text-xs font-bold border border-white/20">
+              ✦ Plus Size Specialist (Sizes 34–56)
+            </span>
+            <span className="px-3 py-1 rounded-full bg-white/10 text-white text-[11px] sm:text-xs font-bold border border-white/20">
+              ✦ Premium Quality Handloom &amp; Cambric Cotton
+            </span>
+            <span className="px-3 py-1 rounded-full bg-white/10 text-white text-[11px] sm:text-xs font-bold border border-white/20">
+              ✦ 100+ Unique Varieties
+            </span>
+            <span className="px-3 py-1 rounded-full bg-white/10 text-white text-[11px] sm:text-xs font-bold border border-white/20">
+              ✦ Full Sets &amp; Tops with Dupatta
+            </span>
+            <span className="px-3 py-1 rounded-full bg-white/10 text-white text-[11px] sm:text-xs font-bold border border-white/20">
+              ✦ Easy Availability &amp; Fast Dispatch
+            </span>
+          </div>
         </div>
 
         {/* Desktop 3-Column Grid / Mobile Interactive Accordion */}
@@ -53,7 +76,7 @@ export default function Footer() {
               aria-expanded={openSections.categories}
             >
               <h4 className="text-sm font-bold uppercase tracking-wider text-white group-hover:text-pink-200 transition-colors">
-                Categories
+                Specialized Collections
               </h4>
               <span className="md:hidden text-pink-300 p-1">
                 {openSections.categories ? <CaretUp size={18} weight="bold" /> : <CaretDown size={18} weight="bold" />}
@@ -66,33 +89,33 @@ export default function Footer() {
               }`}
             >
               <li>
-                <Link href="/shop?category=sarees" className="hover:text-white transition-colors block py-0.5">
-                  Sarees & Handlooms
-                </Link>
-              </li>
-              <li>
-                <Link href="/shop?category=kurtis" className="hover:text-white transition-colors block py-0.5">
-                  Kurtis & Tunics
-                </Link>
-              </li>
-              <li>
                 <Link href="/shop?category=top-with-dupatta-2-piece-set" className="hover:text-white transition-colors block py-0.5">
-                  Top with Dupatta 2-Piece Set
+                  Top with Dupatta 2-Piece Sets
                 </Link>
               </li>
               <li>
                 <Link href="/shop?category=straight-cut-3-piece-set" className="hover:text-white transition-colors block py-0.5">
-                  Straight Cut 3-Piece Set
+                  Straight Cut 3-Piece Full Sets
                 </Link>
               </li>
               <li>
                 <Link href="/shop?category=anarkali-3-piece-set" className="hover:text-white transition-colors block py-0.5">
-                  Anarkali 3-Piece Set
+                  Anarkali 3-Piece Full Sets
                 </Link>
               </li>
               <li>
                 <Link href="/shop?category=umbrella-top" className="hover:text-white transition-colors block py-0.5">
-                  Umbrella Top
+                  Umbrella Tops &amp; Kurtis
+                </Link>
+              </li>
+              <li>
+                <Link href="/shop?category=straight-cut-2-piece-set" className="hover:text-white transition-colors block py-0.5">
+                  Straight Cut 2-Piece Sets
+                </Link>
+              </li>
+              <li>
+                <Link href="/shop" className="hover:text-white transition-colors block py-0.5">
+                  Plus-Size Special (Sizes 34–56)
                 </Link>
               </li>
             </ul>
@@ -107,7 +130,7 @@ export default function Footer() {
               aria-expanded={openSections.care}
             >
               <h4 className="text-sm font-bold uppercase tracking-wider text-white group-hover:text-pink-200 transition-colors">
-                Customer Care
+                Customer Care &amp; Trust
               </h4>
               <span className="md:hidden text-pink-300 p-1">
                 {openSections.care ? <CaretUp size={18} weight="bold" /> : <CaretDown size={18} weight="bold" />}
@@ -126,19 +149,22 @@ export default function Footer() {
               </li>
               <li>
                 <Link href="/contact" className="hover:text-white transition-colors block py-0.5">
-                  Contact Us
+                  Contact &amp; WhatsApp Support
                 </Link>
               </li>
               <li>
                 <Link href="/checkout" className="hover:text-white transition-colors block py-0.5">
-                  Track Order
+                  Track Order Status
                 </Link>
               </li>
               <li className="text-[#a895a2] py-0.5">
-                ✦ 7-Day Easy Returns & Exchanges
+                ✦ Easy Availability &amp; Ready Stock
               </li>
               <li className="text-[#a895a2] py-0.5">
-                ✦ Free COD & Instant UPI Payments
+                ✦ 7-Day Easy Returns &amp; Size Exchanges
+              </li>
+              <li className="text-[#a895a2] py-0.5">
+                ✦ Cash on Delivery &amp; All UPI Apps Accepted
               </li>
             </ul>
           </div>
@@ -152,7 +178,7 @@ export default function Footer() {
               aria-expanded={openSections.links}
             >
               <h4 className="text-sm font-bold uppercase tracking-wider text-white group-hover:text-pink-200 transition-colors">
-                Quick Links
+                Explore 100+ Varieties
               </h4>
               <span className="md:hidden text-pink-300 p-1">
                 {openSections.links ? <CaretUp size={18} weight="bold" /> : <CaretDown size={18} weight="bold" />}
@@ -171,12 +197,12 @@ export default function Footer() {
               </li>
               <li>
                 <Link href="/shop" className="hover:text-white transition-colors block py-0.5">
-                  Shop All Collections
+                  Shop All 100+ Varieties
                 </Link>
               </li>
               <li>
                 <Link href="/shop?isNew=true" className="hover:text-white transition-colors block py-0.5">
-                  Fresh Arrivals & New Weaves
+                  Fresh Arrivals &amp; New Weaves
                 </Link>
               </li>
               <li>
@@ -195,7 +221,7 @@ export default function Footer() {
 
         {/* Bottom Copyright & Trust Line */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#b8a6b2] text-center sm:text-left">
-          <p>© {new Date().getFullYear()} Agal Boutique. All rights reserved. Handcrafted in India.</p>
+          <p>© {new Date().getFullYear()} Agal Boutique. Specialized in Plus Size Ethnic Wear, Full Sets &amp; Tops with Dupatta. Made with love in India.</p>
           <div className="flex items-center gap-4 font-semibold text-white">
             <span className="px-2 py-0.5 rounded bg-white/10 text-[11px] border border-white/20">₹ INR</span>
             <span className="text-[#e6d3e1]">Direct Weavers to Doorstep</span>

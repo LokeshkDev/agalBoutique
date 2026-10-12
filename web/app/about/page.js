@@ -6,8 +6,9 @@ import { getCmsSettings } from "@/lib/api";
 import { Sparkle, Heart, ShieldCheck, Scissors } from "@phosphor-icons/react/dist/ssr";
 
 export const metadata = {
-  title: "About Us | Agal Boutique",
-  description: "Learn about Agal Boutique's Tamil Nadu handloom heritage, master weavers in Kanchipuram, and bespoke blouse stitching studio.",
+  title: "About Agal Boutique | Plus-Size Ethnic Wear & Sets Specialist (Sizes 34-56)",
+  description:
+    "Learn about Agal Boutique - specialized in premium quality plus-size ethnic wear, 100+ varieties of full sets, tops with dupatta, and custom-tailored sizes 34 to 56 with easy availability across India.",
 };
 
 const defaultAboutCms = {

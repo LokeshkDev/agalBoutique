@@ -7,6 +7,30 @@ import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { getCmsSettings, getCategories, getProducts } from "@/lib/api";
 
+export const metadata = {
+  title: "Agal Boutique - Plus Size Ethnic Wear & Sets Store | Tops with Dupatta & Full Sets (Sizes 34-56)",
+  description:
+    "India's premier plus-size boutique specialized in premium quality ethnic wear, sizes 34 to 56 (XS to 6XL). Explore 100+ varieties of sets, 2-piece & 3-piece full sets, straight cut suits, and tops with dupatta with easy availability, fast delivery & COD.",
+  keywords: [
+    "plus size ethnic wear",
+    "plus size boutique India",
+    "plus size sets",
+    "plus size full sets",
+    "plus size tops with dupatta",
+    "top with dupatta 2 piece set",
+    "straight cut 3 piece set",
+    "anarkali 3 piece set",
+    "100+ varieties plus size",
+    "premium quality plus size clothing",
+    "sizes 34 to 56 ethnic wear",
+    "easy availability plus size",
+    "Agal Boutique",
+  ],
+  alternates: {
+    canonical: "/",
+  },
+};
+
 export default async function HomePage() {
   const [cmsRes, catRes, newRes, bestRes] = await Promise.all([
     getCmsSettings(),

@@ -6,7 +6,7 @@ import { Sparkle } from "@phosphor-icons/react";
 
 export default function AnnouncementBar() {
   const [announcement, setAnnouncement] = useState({
-    text: "✨ Free Express Delivery across India on orders above ₹999 | Direct WhatsApp Support",
+    text: "✨ Plus Size Specialist (Sizes 34–56) | 100+ Varieties of Sets, Full Sets & Tops with Dupatta | Premium Quality & Free Delivery above ₹999",
     enabled: true,
   });
 
