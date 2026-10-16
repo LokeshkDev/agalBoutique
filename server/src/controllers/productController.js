@@ -29,6 +29,7 @@ export async function getProducts(req, res) {
       sort,
       fabric,
       size,
+      color,
       minPrice,
       maxPrice,
       isNew,
@@ -70,6 +71,15 @@ export async function getProducts(req, res) {
               size.toLowerCase()
           )
         );
+      }
+      if (color) {
+        const colNorm = color.toLowerCase().trim();
+        filtered = filtered.filter((p) => {
+          if (Array.isArray(p.colors)) {
+            return p.colors.some((c) => String(c).toLowerCase().trim() === colNorm);
+          }
+          return typeof p.colors === "string" && p.colors.toLowerCase().includes(colNorm);
+        });
       }
       if (search) {
         const q = search.toLowerCase();
@@ -135,6 +145,11 @@ export async function getProducts(req, res) {
     if (size) {
       whereClause += " AND LOWER(sizes) LIKE LOWER(?)";
       queryParams.push(`%${size}%`);
+    }
+
+    if (color) {
+      whereClause += " AND LOWER(colors) LIKE LOWER(?)";
+      queryParams.push(`%${color.trim()}%`);
     }
 
     if (search) {
@@ -208,6 +223,82 @@ export async function getProducts(req, res) {
   } catch (err) {
     console.error("Error in getProducts:", err);
     res.status(500).json({ success: false, message: "Failed to fetch products" });
+  }
+}
+
+// GET /api/products/filters
+export async function getProductFilters(req, res) {
+  try {
+    let products = [];
+    if (!pool || !isConnected) {
+      products = seedProducts;
+    } else {
+      const [rows] = await pool.query(
+        "SELECT sizes, fabric, colors FROM products WHERE is_active = 1"
+      );
+      products = rows.map((r) => ({
+        sizes: typeof r.sizes === "string" ? JSON.parse(r.sizes) : r.sizes,
+        fabric: r.fabric,
+        colors: typeof r.colors === "string" ? JSON.parse(r.colors) : r.colors,
+      }));
+    }
+
+    const sizesSet = new Set();
+    const fabricsSet = new Set();
+    const colorsSet = new Set();
+
+    // Standard plus size ordering priority: M to 7XL, etc.
+    const sizePriority = ["M", "L", "XL", "XXL", "2XL", "3XL", "4XL", "5XL", "6XL", "7XL", "Free Size"];
+
+    products.forEach((p) => {
+      // Dynamic Sizes
+      if (Array.isArray(p.sizes)) {
+        p.sizes.forEach((s) => {
+          const val = typeof s === "object" ? s?.label : s;
+          if (val && typeof val === "string" && val.trim()) {
+            sizesSet.add(val.trim());
+          }
+        });
+      }
+
+      // Dynamic Fabrics
+      if (p.fabric && typeof p.fabric === "string" && p.fabric.trim()) {
+        fabricsSet.add(p.fabric.trim());
+      }
+
+      // Dynamic Colors
+      if (Array.isArray(p.colors)) {
+        p.colors.forEach((c) => {
+          if (c && typeof c === "string" && c.trim()) {
+            colorsSet.add(c.trim());
+          }
+        });
+      } else if (typeof p.colors === "string" && p.colors.trim()) {
+        colorsSet.add(p.colors.trim());
+      }
+    });
+
+    const sortedSizes = Array.from(sizesSet).sort((a, b) => {
+      const aIdx = sizePriority.indexOf(a);
+      const bIdx = sizePriority.indexOf(b);
+      if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+      if (aIdx !== -1) return -1;
+      if (bIdx !== -1) return 1;
+      return a.localeCompare(b);
+    });
+
+    const sortedFabrics = Array.from(fabricsSet).sort((a, b) => a.localeCompare(b));
+    const sortedColors = Array.from(colorsSet).sort((a, b) => a.localeCompare(b));
+
+    res.json({
+      success: true,
+      sizes: sortedSizes,
+      fabrics: sortedFabrics,
+      colors: sortedColors,
+    });
+  } catch (err) {
+    console.error("Error in getProductFilters:", err);
+    res.status(500).json({ success: false, message: "Failed to fetch product filters" });
   }
 }
 

@@ -18,8 +18,8 @@ const SIZE_CHARTS = {
     ],
   },
   blouses: {
-    title: "Readymade & Custom Blouses",
-    subtitle: "Boutique Stitching Measurement Chart (Tamil Nadu Master Tailoring)",
+    title: "Readymade Blouses",
+    subtitle: "Plus-Size Measurement Chart (M to 7XL)",
     headers: ["Blouse Size", "Bust Size", "Underbust / Band", "Front Neck Depth", "Back Neck Depth"],
     rows: [
       { size: "Size 32", bust: "32 in", waist: "26-27 in", hips: "6.5 in", shoulder: "10-11 in" },
@@ -221,7 +221,7 @@ export default function SizeGuideModal({ open, onClose, category = "Kurtis" }) {
         {/* Footer Bar */}
         <div className="p-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between shrink-0">
           <span className="text-[11px] text-gray-500 font-medium">
-            Need custom size assistance? WhatsApp us for 1-on-1 tailoring support.
+            Need plus size sizing assistance? WhatsApp us for 1-on-1 support.
           </span>
           <button
             onClick={onClose}

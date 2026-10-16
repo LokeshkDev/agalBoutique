@@ -138,8 +138,23 @@ export default async function ProductPage({ params }) {
     ],
   };
 
+  const firstProductImage =
+    typeof product.images?.[0] === "string"
+      ? product.images[0]
+      : product.images?.[0]?.url;
+
   return (
     <>
+      {/* Explicit LCP Image Preload for Instant PDP Image Delivery */}
+      {firstProductImage && (
+        <link
+          rel="preload"
+          as="image"
+          href={firstProductImage}
+          fetchPriority="high"
+        />
+      )}
+
       <JsonLd data={productLd} />
       <JsonLd data={breadcrumbLd} />
 
@@ -236,7 +251,7 @@ export default async function ProductPage({ params }) {
 
               <Accordion title="7-Day Hassle-Free Returns & Exchanges">
                 <p className="text-xs text-gray-700 leading-relaxed">
-                  Easy returns and size exchanges within 7 days of delivery with free reverse pickup. Custom-stitched blouses are eligible for free tailoring adjustments.
+                  Easy returns and size exchanges within 7 days of delivery with free reverse pickup across India.
                 </p>
               </Accordion>
             </div>

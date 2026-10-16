@@ -25,7 +25,7 @@ export const categories = [
     slug: "blouses", 
     image: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800&q=80", 
     description: "Ready-to-wear padded and non-padded blouses in cotton and art silk featuring thread work and block prints, starting at ₹499.",
-    subcategories: ["Readymade Blouses", "Custom Stitching", "Designer Blouses", "Padded Blouses"]
+    subcategories: ["Readymade Blouses", "Stretchable Blouses", "Designer Blouses", "Padded Blouses"]
   },
   { 
     name: "Lehengas", 

@@ -5,7 +5,7 @@ import { whatsappUrl } from "@/lib/format";
 
 export default function WhatsAppButton({ message }) {
   const url = whatsappUrl(
-    message || "Hello Agal Boutique! I would like to enquire about your products and custom stitching."
+    message || "Hello Agal Boutique! I would like to enquire about your plus-size collections and products."
   );
 
   return (

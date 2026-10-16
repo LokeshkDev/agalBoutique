@@ -40,7 +40,7 @@ const DEFAULT_MENU_ITEMS = [
   { title: "Sarees & Handlooms", url: "/shop?category=sarees" },
   { title: "Kurtis & Tunics", url: "/shop?category=kurtis" },
   { title: "Full Sets & Anarkalis", url: "/shop?category=full-sets" },
-  { title: "Blouses & Stitching", url: "/shop?category=blouses" },
+  { title: "Plus Size Tops & Sets", url: "/shop" },
   { title: "Lehenga Sets", url: "/shop?category=lehengas" },
   { title: "Kidswear & Pattu Pavadai", url: "/shop?category=kidswear" },
   { title: "About Us", url: "/about" },
@@ -64,6 +64,11 @@ export default function Header() {
   if (pathname?.startsWith("/admin")) {
     return null;
   }
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [searchParamsStr, setSearchParamsStr] = useState("");
@@ -393,7 +398,7 @@ export default function Header() {
           >
             <div className="relative">
               <Handbag size={22} weight="bold" className="group-hover:text-plum text-gray-800" />
-              {totalItems > 0 && (
+              {mounted && totalItems > 0 && (
                 <span className="absolute -top-1.5 -right-2 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-extrabold text-white bg-crimson rounded-full shadow-xs">
                   {totalItems}
                 </span>
@@ -406,42 +411,48 @@ export default function Header() {
 
       {/* Mobile/Tablet Swipeable Header Menu Bar (< lg) */}
       <div
-        ref={mobileNavRef}
-        onMouseDown={handleMobMouseDown}
-        onMouseMove={handleMobMouseMove}
-        onMouseUp={handleMobMouseUp}
-        onMouseLeave={handleMobMouseLeave}
-        onWheel={(e) => {
-          if (e.deltaY !== 0 && mobileNavRef.current) {
-            mobileNavRef.current.scrollLeft += e.deltaY;
-          }
-        }}
-        className="lg:hidden w-full border-t border-gray-200/60 bg-white/95 backdrop-blur-xs overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap px-3 sm:px-4 py-2 select-none cursor-grab active:cursor-grabbing touch-pan-x"
+        className={`lg:hidden transition-all duration-300 ease-in-out overflow-hidden ${
+          isScrolled ? "max-h-0 opacity-0 pointer-events-none" : "max-h-14 opacity-100"
+        }`}
       >
-        <ul className="flex items-center gap-2 shrink-0 text-xs font-semibold text-gray-700">
-          {headerQuickMenu.map((item, idx) => {
-            const itemUrl = item.url || "/shop";
-            const currentFullUrl = pathname + searchParamsStr;
-            const isActive =
-              itemUrl === "/shop"
-                ? pathname === "/shop" && !searchParamsStr
-                : currentFullUrl === itemUrl || (itemUrl !== "/" && currentFullUrl.startsWith(itemUrl));
-            return (
-              <li key={item.id || idx} className="shrink-0">
-                <Link
-                  href={itemUrl}
-                  className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all inline-block ${
-                    isActive
-                      ? "bg-plum text-white shadow-2xs"
-                      : "bg-[#FAF7F2] text-gray-700 border border-gray-200 hover:border-plum hover:text-plum"
-                  }`}
-                >
-                  {item.title}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        <div
+          ref={mobileNavRef}
+          onMouseDown={handleMobMouseDown}
+          onMouseMove={handleMobMouseMove}
+          onMouseUp={handleMobMouseUp}
+          onMouseLeave={handleMobMouseLeave}
+          onWheel={(e) => {
+            if (e.deltaY !== 0 && mobileNavRef.current) {
+              mobileNavRef.current.scrollLeft += e.deltaY;
+            }
+          }}
+          className="w-full border-t border-gray-200/60 bg-white/95 backdrop-blur-xs overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap px-3 sm:px-4 py-2 select-none cursor-grab active:cursor-grabbing touch-pan-x"
+        >
+          <ul className="flex items-center gap-2 shrink-0 text-xs font-semibold text-gray-700">
+            {headerQuickMenu.map((item, idx) => {
+              const itemUrl = item.url || "/shop";
+              const currentFullUrl = pathname + searchParamsStr;
+              const isActive =
+                itemUrl === "/shop"
+                  ? pathname === "/shop" && !searchParamsStr
+                  : currentFullUrl === itemUrl || (itemUrl !== "/" && currentFullUrl.startsWith(itemUrl));
+              return (
+                <li key={item.id || idx} className="shrink-0">
+                  <Link
+                    href={itemUrl}
+                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all inline-block ${
+                      isActive
+                        ? "bg-plum text-white shadow-2xs"
+                        : "bg-[#FAF7F2] text-gray-700 border border-gray-200 hover:border-plum hover:text-plum"
+                    }`}
+                  >
+                    {item.title}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       </div>
 
       {/* Expandable Search Input Bar with Live Suggested Products (Desktop & Mobile) */}
@@ -626,32 +637,38 @@ export default function Header() {
         </div>
       )}
 
-      {/* Desktop Sub-Category Navigation Bar (Dynamic CMS Links) */}
-      <nav
-        aria-label="Category Navigation"
-        className="hidden sm:block w-full border-t border-gray-200 bg-white"
+      {/* Desktop Sub-Category Navigation Bar (Dynamic CMS Links, hides on scroll same like announcement bar) */}
+      <div
+        className={`hidden sm:block transition-all duration-300 ease-in-out overflow-hidden ${
+          isScrolled ? "max-h-0 opacity-0 pointer-events-none" : "max-h-14 opacity-100"
+        }`}
       >
-        <div className="max-w-[var(--container)] mx-auto px-4 sm:px-6 lg:px-8">
-          <ul className="flex items-center gap-5 sm:gap-7 overflow-x-auto no-scrollbar py-2.5 text-xs sm:text-sm font-semibold text-gray-700 whitespace-nowrap">
-            {navMenuItems.map((item, idx) => {
-              const itemHref = item.url || item.href || "/shop";
-              const isActive = pathname + searchParamsStr === itemHref;
-              return (
-                <li key={idx} className="shrink-0">
-                  <Link
-                    href={itemHref}
-                    className={`transition-colors hover:text-plum ${
-                      isActive ? "text-plum font-bold border-b-2 border-plum pb-1" : "text-gray-700"
-                    }`}
-                  >
-                    {item.title || item.name}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      </nav>
+        <nav
+          aria-label="Category Navigation"
+          className="w-full border-t border-gray-200 bg-white"
+        >
+          <div className="max-w-[var(--container)] mx-auto px-4 sm:px-6 lg:px-8">
+            <ul className="flex items-center gap-5 sm:gap-7 overflow-x-auto no-scrollbar py-2.5 text-xs sm:text-sm font-semibold text-gray-700 whitespace-nowrap">
+              {navMenuItems.map((item, idx) => {
+                const itemHref = item.url || item.href || "/shop";
+                const isActive = pathname + searchParamsStr === itemHref;
+                return (
+                  <li key={idx} className="shrink-0">
+                    <Link
+                      href={itemHref}
+                      className={`transition-colors hover:text-plum ${
+                        isActive ? "text-plum font-bold border-b-2 border-plum pb-1" : "text-gray-700"
+                      }`}
+                    >
+                      {item.title || item.name}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </nav>
+      </div>
 
       {/* Slide-out Hamburger Drawer: Categories & Sub-Categories */}
       <Sheet
@@ -791,18 +808,6 @@ export default function Header() {
               <div className="flex items-center gap-2">
                 <Phone size={16} />
                 <span>Contact & Store Details</span>
-              </div>
-              <CaretRight size={14} />
-            </Link>
-
-            <Link
-              href="/checkout"
-              onClick={() => setMenuDrawerOpen(false)}
-              className="flex items-center justify-between p-3 rounded-xl bg-gray-50 text-gray-700 font-bold text-xs"
-            >
-              <div className="flex items-center gap-2">
-                <Truck size={16} />
-                <span>Track Order & Delivery Status</span>
               </div>
               <CaretRight size={14} />
             </Link>

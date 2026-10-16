@@ -41,14 +41,14 @@ export const metadata = {
     "straight cut 3 piece set",
     "anarkali 3 piece set",
     "umbrella top with dupatta",
-    "sizes 34 to 56 women ethnic wear",
+    "sizes M to 7XL women ethnic wear",
     "plus size kurtis online",
     "100+ varieties plus size ethnic wear",
     "premium quality plus size store",
     "easy availability plus size suits",
     "curvy women ethnic fashion India",
     "pure cotton plus size sets",
-    "custom blouse stitching Chennai",
+    "plus size western wear and festival wear",
   ],
   authors: [{ name: "Agal Boutique" }],
   openGraph: {
@@ -56,9 +56,9 @@ export const metadata = {
     locale: "en_IN",
     url: "https://www.agalboutique.com",
     siteName: "Agal Boutique",
-    title: "Agal Boutique - Plus Size Ethnic Wear & Sets | Tops with Dupatta & Full Sets (Sizes 34-56)",
+    title: "Agal Boutique - Plus Size Varieties, Western & Festival Wear | Tops with Dupatta & Full Sets (M to 7XL)",
     description:
-      "Specialized in premium quality plus-size ethnic wear, 100+ varieties of 2-piece & 3-piece full sets, and tops with dupatta in sizes 34 to 56 with easy availability across India.",
+      "Specialized in plus size varieties (M to 7XL), festival season collections, premium quality fabrics, western wear, festival wear, 2-piece & 3-piece full sets, and tops with dupatta with easy availability across India.",
     images: [
       {
         url: "/logo.png",
@@ -110,6 +110,8 @@ export default function RootLayout({ children }) {
       className={`${roboto.variable} ${roboto.className} ${notoTamil.variable}`}
     >
       <head>
+        <link rel="preconnect" href="https://agalboutique.onrender.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://agalboutique.onrender.com" />
         <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://images.unsplash.com" />
         <link rel="preconnect" href="https://images.pexels.com" crossOrigin="anonymous" />

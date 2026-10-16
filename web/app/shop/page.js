@@ -3,17 +3,17 @@ import ProductCard from "@/components/ProductCard";
 import ShopFilters from "@/components/ShopFilters";
 import JsonLd from "@/components/JsonLd";
 import Footer from "@/components/Footer";
-import { getProducts, getCategories } from "@/lib/api";
+import { getProducts, getCategories, getProductFilters } from "@/lib/api";
 import { Tote } from "@phosphor-icons/react/dist/ssr";
 
 export async function generateMetadata({ searchParams }) {
   const params = await searchParams;
   const category = params?.category || "";
   const title = category
-    ? `${category.charAt(0).toUpperCase() + category.slice(1).replace(/-/g, " ")} | Plus Size Sets & Tops with Dupatta | Agal Boutique`
-    : "Plus Size Sets, Tops with Dupatta & Full Sets (Sizes 34-56) | Agal Boutique";
+    ? `${category.charAt(0).toUpperCase() + category.slice(1).replace(/-/g, " ")} | Plus Size Varieties & Festival Wear | Agal Boutique`
+    : "Plus Size Varieties, Western Wear & Festival Collections (M to 7XL) | Agal Boutique";
   const description =
-    "Shop 100+ varieties of premium quality plus-size ethnic wear, 2-piece & 3-piece full sets, straight cut sets, and tops with dupatta in sizes 34 to 56 with easy availability and cash on delivery.";
+    "Shop 100+ varieties of premium quality plus-size ethnic wear, 2-piece & 3-piece full sets, straight cut sets, western wear, and tops with dupatta in sizes M to 7XL with easy availability and cash on delivery.";
 
   const canonicalUrl = category ? `/shop?category=${encodeURIComponent(category)}` : "/shop";
 
@@ -21,13 +21,18 @@ export async function generateMetadata({ searchParams }) {
     title,
     description,
     keywords: [
+      "plus size varieties",
+      "festival season collections",
+      "premium quality fabrics",
+      "western wear",
+      "festival wear",
       "plus size ethnic wear",
       "plus size full sets",
       "tops with dupatta",
       "top with dupatta 2 piece set",
       "3 piece full sets",
       "100+ varieties plus size",
-      "sizes 34 to 56",
+      "sizes M to 7XL",
       "premium quality plus size boutique",
       "easy availability",
       "Agal Boutique",
@@ -51,6 +56,7 @@ export default async function ShopPage({ searchParams }) {
   const sort = params?.sort || "newest";
   const fabric = params?.fabric || "";
   const size = params?.size || "";
+  const color = params?.color || "";
   const page = parseInt(params?.page || "1", 10);
   const limit = 16;
 
@@ -58,7 +64,7 @@ export default async function ShopPage({ searchParams }) {
   const isBestseller = params?.isBestseller !== undefined ? params.isBestseller : (params?.badge === "bestseller" ? true : undefined);
 
   // Parallel concurrent data fetching to eliminate sequential waterfalls
-  const [catRes, prodRes] = await Promise.all([
+  const [catRes, prodRes, filterRes] = await Promise.all([
     getCategories(),
     getProducts({
       category,
@@ -67,17 +73,69 @@ export default async function ShopPage({ searchParams }) {
       sort,
       fabric,
       size,
+      color,
       isNew,
       isBestseller,
       page,
       limit,
     }),
+    getProductFilters(),
   ]);
 
   const categoriesList = catRes?.categories || [];
   const productsList = prodRes?.products || [];
   const total = prodRes?.total || productsList.length;
   const totalPages = Math.ceil(total / limit) || 1;
+
+  // Extract dynamic filters from actual backend database or active products
+  let dynamicSizes = filterRes?.sizes || [];
+  let dynamicFabrics = filterRes?.fabrics || [];
+  let dynamicColors = filterRes?.colors || [];
+
+  if (dynamicSizes.length === 0 || dynamicFabrics.length === 0 || dynamicColors.length === 0) {
+    const allProdSources = [...productsList];
+    try {
+      const { products: localDummy } = require("@/lib/data/products");
+      allProdSources.push(...localDummy);
+    } catch (e) {}
+
+    const sizePriority = ["M", "L", "XL", "XXL", "2XL", "3XL", "4XL", "5XL", "6XL", "7XL", "Free Size"];
+    const sSet = new Set(dynamicSizes);
+    const fSet = new Set(dynamicFabrics);
+    const cSet = new Set(dynamicColors);
+
+    allProdSources.forEach((p) => {
+      if (Array.isArray(p.sizes)) {
+        p.sizes.forEach((s) => {
+          const val = typeof s === "object" ? s?.label : s;
+          if (val && typeof val === "string" && val.trim()) sSet.add(val.trim());
+        });
+      }
+      if (p.fabric && typeof p.fabric === "string" && p.fabric.trim()) {
+        fSet.add(p.fabric.trim());
+      }
+      if (Array.isArray(p.colors)) {
+        p.colors.forEach((c) => {
+          if (c && typeof c === "string" && c.trim()) cSet.add(c.trim());
+        });
+      } else if (typeof p.colors === "string" && p.colors.trim()) {
+        cSet.add(p.colors.trim());
+      }
+    });
+
+    if (dynamicSizes.length === 0) {
+      dynamicSizes = Array.from(sSet).sort((a, b) => {
+        const aIdx = sizePriority.indexOf(a);
+        const bIdx = sizePriority.indexOf(b);
+        if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+        if (aIdx !== -1) return -1;
+        if (bIdx !== -1) return 1;
+        return a.localeCompare(b);
+      });
+    }
+    if (dynamicFabrics.length === 0) dynamicFabrics = Array.from(fSet).sort((a, b) => a.localeCompare(b));
+    if (dynamicColors.length === 0) dynamicColors = Array.from(cSet).sort((a, b) => a.localeCompare(b));
+  }
 
   const categoryName = category
     ? categoriesList.find(
@@ -114,7 +172,16 @@ export default async function ShopPage({ searchParams }) {
 
       <div className="max-w-[var(--container)] mx-auto px-4 lg:px-8 py-4 lg:py-6 animate-section-reveal">
         {/* Compact Header with Title & Filter Controls Component */}
-        <ShopFilters categoryName={categoryName} totalCount={total} categories={categoriesList} />
+        <ShopFilters
+          categoryName={categoryName}
+          totalCount={total}
+          categories={categoriesList}
+          dynamicFilters={{
+            sizes: dynamicSizes,
+            fabrics: dynamicFabrics,
+            colors: dynamicColors,
+          }}
+        />
 
         {/* Product Grid or Empty State */}
         {productsList.length === 0 ? (

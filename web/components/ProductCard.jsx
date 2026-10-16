@@ -53,6 +53,8 @@ function ProductCard({ product, priority = false }) {
               sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1359px) 25vw, 20vw"
               className="object-cover transition-transform duration-300 group-hover:scale-105"
               priority={priority}
+              fetchPriority={priority ? "high" : "auto"}
+              loading={priority ? "eager" : "lazy"}
               onError={() => setImgSrc("/logo.png")}
             />
           </Link>

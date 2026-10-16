@@ -10,10 +10,10 @@ const DEFAULT_TESTIMONIALS = [
     name: "Priya Sundaram",
     location: "Chennai, Tamil Nadu",
     rating: 5,
-    tag: "Custom Blouse Stitching",
+    tag: "Plus Size Anarkali Set (5XL)",
     date: "Verified Buyer",
     review:
-      "Ordered custom blouse stitching for my Kanchipuram silk saree. The fit was 100% accurate to the measurements I sent on WhatsApp! The neck piping and dori work were so neat. Highly recommend Agal Boutique.",
+      "Finding authentic 5XL plus size festive sets was impossible until I found Agal Boutique! The fit is perfect, fabric quality is pure luxury, and the dupatta length is generous. Highly recommend Agal Boutique.",
   },
   {
     id: 2,
@@ -99,13 +99,13 @@ export default function TestimonialsSlider({ initialTestimonials }) {
   return (
     <section
       aria-labelledby="testimonials-heading"
-      className="py-12 lg:py-16 bg-[#faf5f8] border-t border-line overflow-hidden animate-section-reveal"
+      className="py-[16px] sm:py-[18px] bg-[#faf5f8] border-t border-line overflow-hidden animate-section-reveal"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
       <div className="max-w-[var(--container)] mx-auto px-4 lg:px-8">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-4 sm:mb-6 gap-3">
           <div>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[4px] bg-[#e6f4ea] text-[#238b45] text-xs font-bold uppercase tracking-wider mb-2">
               <Star size={14} weight="fill" /> 4.8 / 5 Customer Satisfaction
@@ -117,7 +117,7 @@ export default function TestimonialsSlider({ initialTestimonials }) {
               What Our Customers Say
             </h2>
             <p className="text-xs sm:text-sm text-gray-600 mt-1">
-              Verified reviews from women who love our fabrics & custom stitching
+              Verified reviews from women who love our plus size fits &amp; quality fabrics
             </p>
           </div>
 

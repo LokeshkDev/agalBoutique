@@ -29,7 +29,7 @@ export function discountPercent(price, mrp) {
  * @returns {string}
  */
 export function whatsappUrl(message = "") {
-  const phone = process.env.NEXT_PUBLIC_WHATSAPP || "919876543210";
+  const phone = process.env.NEXT_PUBLIC_WHATSAPP || "916379589711";
   return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 }
 

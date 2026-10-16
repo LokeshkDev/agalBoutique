@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { House, SquaresFour, Handbag, Heart } from "@phosphor-icons/react";
@@ -8,6 +9,12 @@ import { useShallow } from "zustand/react/shallow";
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const { items = [], openCart } = useCart(
     useShallow((state) => ({
       items: state.items,
@@ -50,7 +57,7 @@ export default function BottomNav() {
               >
                 <div className="relative">
                   <Icon size={22} weight="regular" />
-                  {tab.badge > 0 && (
+                  {mounted && tab.badge > 0 && (
                     <span className="absolute -top-1.5 -right-2 flex items-center justify-center min-w-[16px] h-[16px] px-1 text-[9px] font-extrabold text-white bg-crimson rounded-full shadow-xs">
                       {tab.badge}
                     </span>

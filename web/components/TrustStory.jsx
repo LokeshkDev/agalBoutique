@@ -5,7 +5,7 @@ import { WhatsappLogo } from "@phosphor-icons/react/dist/ssr";
 
 export default function TrustStory() {
   const waLink = whatsappUrl(
-    "Hello Agal Boutique, I would like to enquire about custom stitching and ordering."
+    "Hello Agal Boutique, I would like to enquire about plus-size collections and ordering."
   );
 
   return (
@@ -22,7 +22,7 @@ export default function TrustStory() {
                 id="story-heading"
                 className="text-2xl sm:text-3xl lg:text-4xl font-serif text-plum-900 mt-1"
               >
-                Custom tailoring, <em className="italic text-plum font-serif">delivered</em> to your door.
+                Plus-size ethnic &amp; western wear, <em className="italic text-plum font-serif">delivered</em> to your door.
               </h2>
             </div>
 
@@ -33,7 +33,7 @@ export default function TrustStory() {
                   1
                 </span>
                 <span>
-                  <strong>Measure & Tailor:</strong> Share your measurements on WhatsApp or choose standard sizes; our master tailors stitch and finish your blouse in 3–5 working days.
+                  <strong>Perfect Plus-Size Fit:</strong> Curated in sizes M to 7XL, our collections feature generous cuts, comfortable inner linings, and premium Indian fabrics.
                 </span>
               </p>
 

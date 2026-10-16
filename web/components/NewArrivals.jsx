@@ -28,9 +28,9 @@ export default function NewArrivals({ initialProducts = [] }) {
   if (products.length === 0) return null;
 
   return (
-    <section aria-labelledby="new-arrivals-heading" className="py-8 lg:py-14 bg-[#fbf5f7] animate-section-reveal">
+    <section aria-labelledby="new-arrivals-heading" className="py-[16px] sm:py-[18px] bg-[#fbf5f7] animate-section-reveal">
       <div className="max-w-[var(--container)] mx-auto px-4 lg:px-8">
-        <div className="flex items-baseline justify-between mb-5">
+        <div className="flex items-baseline justify-between mb-3">
           <div>
             <h2
               id="new-arrivals-heading"

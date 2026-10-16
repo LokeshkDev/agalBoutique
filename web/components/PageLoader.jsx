@@ -70,7 +70,7 @@ export default function PageLoader() {
             Agal Boutique
           </p>
           <p className="text-[11px] text-gray-400 font-sans">
-            Handcrafted Indian Fashion & Tailoring
+            Plus Size Ethnic &amp; Western Wear
           </p>
         </div>
       </div>

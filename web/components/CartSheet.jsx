@@ -79,7 +79,7 @@ export default function CartSheet() {
             Your bag is empty
           </h3>
           <p className="text-gray-500 text-xs sm:text-sm mb-6 max-w-xs leading-relaxed font-sans">
-            Handcrafted sarees, stitched blouses & festive kurtis are waiting for you.
+            Plus size sets, tops with dupatta &amp; festival wear are waiting for you.
           </p>
           <Button
             href="/shop"

@@ -60,6 +60,7 @@ export async function getProducts(params = {}) {
   if (params.maxPrice) query.append("maxPrice", params.maxPrice);
   if (params.fabric) query.append("fabric", params.fabric);
   if (params.size) query.append("size", params.size);
+  if (params.color) query.append("color", params.color);
   if (params.isNew !== undefined) query.append("isNew", params.isNew);
   if (params.isBestseller !== undefined) query.append("isBestseller", params.isBestseller);
   if (params.page) query.append("page", params.page);
@@ -67,6 +68,10 @@ export async function getProducts(params = {}) {
 
   const queryString = query.toString();
   return await apiFetch(`/products${queryString ? `?${queryString}` : ""}`);
+}
+
+export async function getProductFilters() {
+  return await apiFetch("/products/filters");
 }
 
 export async function getProductBySlug(slug) {

@@ -60,11 +60,11 @@ export default function CategoryRow({ initialCategories = [] }) {
   return (
     <section
       aria-labelledby="categories-heading"
-      className="py-6 lg:py-10 bg-white animate-section-reveal"
+      className="py-[16px] sm:py-[18px] bg-white animate-section-reveal"
     >
       <div className="max-w-[var(--container)] mx-auto px-4 lg:px-8">
         {/* Section Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-3">
           <div>
             <h2
               id="categories-heading"

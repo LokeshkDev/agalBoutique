@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
-import { X, Star, Handbag, Check, ArrowRight, Sparkle } from "@phosphor-icons/react";
+import { X, Handbag, Check, ArrowRight, Sparkle } from "@phosphor-icons/react";
 import { formatPrice, discountPercent, getColorHex } from "@/lib/format";
 import { useCart } from "@/store/cart";
 import { normalizeImageUrl } from "@/lib/api";
@@ -261,9 +261,6 @@ export default function QuickViewModal({ product, open, onClose }) {
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-[11px] font-black text-plum bg-plum/10 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                     {product.category}
-                  </span>
-                  <span className="text-xs text-emerald-700 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-emerald-200">
-                    <Star size={13} weight="fill" className="text-amber-500" /> {product.rating?.avg || "4.6"} ({product.rating?.count || "94"} Reviews)
                   </span>
                 </div>
                 <h2 className="text-lg sm:text-2xl font-black text-gray-900 leading-snug">

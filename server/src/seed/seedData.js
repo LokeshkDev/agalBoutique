@@ -7,7 +7,7 @@ export const seedCategories = [
   { name: "Sarees", slug: "sarees", image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800&q=80", description: "Handwoven Kanchipuram, Banarasi & Daily Linen Sarees." },
   { name: "Kurtis", slug: "kurtis", image: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=800&q=80", description: "Cambric Cotton, Rayon & Festive Chanderi Kurtis." },
   { name: "Full Sets", slug: "full-sets", image: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=800&q=80", description: "Kurti Palazzo Dupatta Sets & Anarkali Suits." },
-  { name: "Blouses", slug: "blouses", image: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800&q=80", description: "Readymade & Custom Stitched Blouses from Tamil Nadu." },
+  { name: "Blouses", slug: "blouses", image: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800&q=80", description: "Readymade & Designer Blouses from Tamil Nadu." },
   { name: "Lehengas", slug: "lehengas", image: "https://images.unsplash.com/photo-1583391733975-dd83a31c53d1?w=800&q=80", description: "Bridal, Party Wear & Half Saree Sets." },
   { name: "Kidswear", slug: "kidswear", image: "https://images.unsplash.com/photo-1622290291468-a28f7a7dc6a8?w=800&q=80", description: "Traditional Girls Pattu Pavadai & Festive Frocks." },
 ];
@@ -62,7 +62,7 @@ export const seedProducts = [
     slug: "readymade-silk-padded-blouse",
     name: "Readymade Silk Padded Blouse",
     category: "Blouses",
-    description: "Padded brocade silk blouse with back hook closure and piping details. Eligible for custom size adjustments by master tailors.",
+    description: "Padded brocade silk blouse with back hook closure and piping details. Designed with generous inner margins for easy adjustments.",
     fabric: "Brocade Silk & Cotton Lining",
     care: "Dry clean recommended",
     occasion: ["Festive", "Party Wear"],

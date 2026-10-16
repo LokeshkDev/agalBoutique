@@ -6,17 +6,17 @@ import { getCmsSettings } from "@/lib/api";
 import { Sparkle, Heart, ShieldCheck, Scissors } from "@phosphor-icons/react/dist/ssr";
 
 export const metadata = {
-  title: "About Agal Boutique | Plus-Size Ethnic Wear & Sets Specialist (Sizes 34-56)",
+  title: "About Agal Boutique | Plus-Size Ethnic & Western Wear Specialist (M to 7XL)",
   description:
-    "Learn about Agal Boutique - specialized in premium quality plus-size ethnic wear, 100+ varieties of full sets, tops with dupatta, and custom-tailored sizes 34 to 56 with easy availability across India.",
+    "Learn about Agal Boutique - specialized in premium quality plus-size ethnic wear, 100+ varieties of full sets, tops with dupatta, and festival collections in sizes M to 7XL with easy availability across India.",
 };
 
 const defaultAboutCms = {
   hero_title: "Handcrafted Elegance & Timeless Tamil Heritage",
-  hero_subtitle: "Bridging centuries of Indian handloom weaving with modern boutique tailoring.",
+  hero_subtitle: "Specialized in plus size varieties (M to 7XL), premium quality fabrics, western wear and festival collections.",
   hero_image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=1200&q=80",
   story_headline: "Our Story: Rooted in Tamil Nadu's Weaving Heartlands",
-  story_text: "Agal Boutique was founded with a passion to honor traditional Indian handlooms while offering contemporary women effortless elegance. Every piece in our collection is woven by master artisans across Kanchipuram, Coimbatore, and Madurai, then custom-fitted by our master tailors in Chennai.",
+  story_text: "Agal Boutique was founded with a passion to honor traditional Indian handlooms while offering contemporary women effortless elegance in plus size fashion. Every piece in our collection is crafted with premium fabrics and generous fits across sizes M to 7XL.",
   story_image: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800&q=80",
   cards: [
     {
@@ -25,8 +25,8 @@ const defaultAboutCms = {
       image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600&q=80",
     },
     {
-      title: "Custom Stitching Studio",
-      text: "Bespoke blouse & saree tailoring dispatched in 3–5 days with free adjustment guarantee.",
+      title: "Plus Size Specialist (M–7XL)",
+      text: "Comfort-first silhouettes with generous cuts, breathable linings, and flattering draping.",
       image: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=600&q=80",
     },
     {
@@ -99,7 +99,7 @@ export default async function AboutPage() {
               </div>
               <div className="flex items-center gap-2">
                 <Scissors size={18} className="text-plum shrink-0" />
-                <span>3–5 Days Tailoring</span>
+                <span>Perfect M to 7XL Fit</span>
               </div>
               <div className="flex items-center gap-2">
                 <ShieldCheck size={18} className="text-plum shrink-0" />
@@ -164,7 +164,7 @@ export default async function AboutPage() {
             Ready to Discover Handcrafted Luxury?
           </h2>
           <p className="text-xs sm:text-sm text-gray-700 max-w-md mx-auto">
-            Explore our latest Kanchipuram silk sarees, cambric cotton kurtis, and custom-stitched blouse collections.
+            Explore our latest plus-size full sets, tops with dupatta, western wear, and festival collections.
           </p>
           <div className="pt-2">
             <Link

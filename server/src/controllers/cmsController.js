@@ -15,12 +15,12 @@ const defaultCmsSettings = {
     },
     {
       id: 2,
-      title: "3–5 Days Custom Blouse Stitching",
-      subtitle: "Send measurements on WhatsApp or pick standard sizes",
-      offer: "Master Craftsmanship from Tamil Nadu · Free Alteration Guarantee",
-      link: "/shop?category=blouses",
-      cta: "Explore Blouse Styles",
-      badge: "Bespoke Tailoring",
+      title: "Plus Size Varieties (M to 7XL)",
+      subtitle: "Western wear, festival collections & tops with dupatta",
+      offer: "100+ Unique Varieties · Premium Quality Fabrics",
+      link: "/shop",
+      cta: "Explore Plus Size",
+      badge: "Plus Size Specialist",
       image: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1200&q=80",
     },
     {
@@ -44,9 +44,9 @@ const defaultCmsSettings = {
       name: "Priya Sundaram",
       location: "Chennai, Tamil Nadu",
       rating: 5,
-      tag: "Custom Blouse Stitching",
+      tag: "Plus Size Anarkali Set (5XL)",
       date: "Verified Buyer",
-      review: "Ordered custom blouse stitching for my Kanchipuram silk saree. The fit was 100% accurate to the measurements I sent on WhatsApp! The neck piping and dori work were so neat.",
+      review: "Finding authentic 5XL plus size festive sets was impossible until I found Agal Boutique! The fit is perfect, fabric quality is pure luxury, and the dupatta length is generous.",
     },
     {
       id: 2,
@@ -68,17 +68,17 @@ const defaultCmsSettings = {
     },
   ],
   store_info: {
-    phone: "+91 98765 43210",
-    whatsapp: "+91 98765 43210",
+    phone: "+91 63795 89711",
+    whatsapp: "+91 63795 89711",
     email: "support@agalboutique.com",
     address: "124 Boutique Street, T. Nagar, Chennai, Tamil Nadu 600017",
   },
   about_cms: {
     hero_title: "Handcrafted Elegance & Timeless Tamil Heritage",
-    hero_subtitle: "Bridging centuries of Indian handloom weaving with modern boutique tailoring.",
+    hero_subtitle: "Specialized in plus size varieties (M to 7XL), premium quality fabrics, western wear and festival collections.",
     hero_image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=1200&q=80",
     story_headline: "Our Story: Rooted in Tamil Nadu's Weaving Heartlands",
-    story_text: "Agal Boutique was founded with a passion to honor traditional Indian handlooms while offering contemporary women effortless elegance. Every piece in our collection is woven by master artisans across Kanchipuram, Coimbatore, and Madurai, then custom-fitted by our master tailors.",
+    story_text: "Agal Boutique was founded with a passion to honor traditional Indian handlooms while offering contemporary women effortless elegance in plus size fashion. Every piece in our collection is crafted with premium fabrics and generous fits across sizes M to 7XL.",
     story_image: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800&q=80",
     cards: [
       {
@@ -87,8 +87,8 @@ const defaultCmsSettings = {
         image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600&q=80",
       },
       {
-        title: "Custom Stitching Studio",
-        text: "Bespoke blouse & saree tailoring dispatched in 3–5 days with free adjustment guarantee.",
+        title: "Plus Size Specialist (M–7XL)",
+        text: "Comfort-first silhouettes with generous cuts, breathable linings, and flattering draping.",
         image: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=600&q=80",
       },
       {
@@ -100,14 +100,87 @@ const defaultCmsSettings = {
   },
   contact_cms: {
     title: "Visit Our Boutique or Get in Touch",
-    subtitle: "We're here to assist you with orders, custom stitching, or styling queries.",
-    whatsapp: "+91 98765 43210",
-    phone: "+91 98765 43210",
+    subtitle: "We're here to assist you with orders, plus size sizing, or styling queries.",
+    whatsapp: "+91 63795 89711",
+    phone: "+91 63795 89711",
     email: "support@agalboutique.com",
     address: "124 Boutique Street, Opp. Panagal Park, T. Nagar, Chennai, Tamil Nadu 600017",
     hours: "Monday – Saturday: 10:00 AM – 9:00 PM | Sunday: 11:00 AM – 7:00 PM",
     map_url: "https://maps.google.com/maps?q=T.+Nagar,+Chennai&t=&z=13&ie=UTF8&iwloc=&output=embed",
     banner_image: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1200&q=80",
+  },
+  policy_pages: {
+    terms: {
+      title: "Terms and Conditions",
+      subtitle: "Please review our terms of service, boutique policies, and order agreements.",
+      banner_image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=1200&q=80",
+      content: `Welcome to Agal Boutique. By accessing or shopping on our website (agalboutique.com), you agree to comply with and be bound by the following terms and conditions.
+
+1. Product Authenticity & Handcrafted Variation
+All sarees, kurtis, 2-piece sets, 3-piece full sets, and ethnic wear are handcrafted with premium fabrics. Due to authentic handloom weaving and artisan dying processes, minor variations in weave texture, motifs, and shade are characteristic of handloom authenticity and not considered defects.
+
+2. Plus Size Sizing (M to 7XL)
+We specialize in plus size varieties from M to 7XL. Please refer to our detailed size chart before ordering. For any sizing guidance or assistance, reach out to our team via WhatsApp.
+
+3. Pricing & Taxes
+All listed prices are in Indian Rupees (INR) and are inclusive of applicable GST unless explicitly stated otherwise. Delivery and shipping charges are calculated at checkout based on chosen payment method and order value.
+
+4. Orders & Cancellations
+Orders can be canceled within 12 hours of placement or prior to dispatch, whichever is earlier. Once an order has been dispatched, standard refund and exchange policies apply.
+
+5. Delivery & Transit
+We partner with premier courier services across India. Normal delivery transit is 3-5 business days across Tamil Nadu & major metropolitan cities, and 4-7 business days for other regional areas. Agal Boutique is not liable for force majeure transit delays.`,
+      updated_at: "October 2026",
+    },
+    refund: {
+      title: "Refund & Exchange Policy",
+      subtitle: "Our commitment to hassle-free 7-day returns, size exchanges, and customer satisfaction.",
+      banner_image: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1200&q=80",
+      content: `At Agal Boutique, your complete satisfaction with your ethnic wear is our utmost priority. We offer a transparent, customer-friendly 7-day return and exchange policy.
+
+1. 7-Day Hassle-Free Returns & Size Exchanges
+If you are not fully satisfied with your purchase or require a different size (sizes M to 7XL available), you may request a return or size exchange within 7 days of receiving your parcel.
+
+2. Eligibility Conditions
+• The garment must be unworn, unwashed, unaltered, and undamaged.
+• Original price tags, brand labels, and boutique packaging must be intact.
+• Products bought during clearance blowout sales are eligible for size exchange or store credit.
+
+3. Process for Exchange / Return
+To initiate a return or exchange:
+• WhatsApp our customer care team at +91 63795 89711 with your Order ID and photos of the garment.
+• Our team will arrange a reverse pickup from your doorstep or provide shipping instructions.
+
+4. Refund Timelines
+Once your returned parcel is received and inspected at our Chennai boutique studio:
+• Online Payments: Refund will be processed back to the original source account (UPI / Bank / Card) within 3–5 working days.
+• Cash on Delivery (COD): Refund will be transferred directly to your bank account or Google Pay / PhonePe UPI ID within 24–48 hours of verification.`,
+      updated_at: "October 2026",
+    },
+    privacy: {
+      title: "Privacy Policy",
+      subtitle: "How Agal Boutique protects your personal information, contact details, and transactions.",
+      banner_image: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=1200&q=80",
+      content: `Agal Boutique is committed to respecting and protecting the privacy of our esteemed customers. This Privacy Policy outlines our data handling practices.
+
+1. Information We Collect
+We collect necessary details required to deliver your orders and provide personalized styling support:
+• Contact Information: Full name, phone/WhatsApp number, delivery address, city, state, pin code, and email address.
+• Sizing & Fitting Preferences: Selected dress sizes (M to 7XL) and preferred styles.
+• Transaction History: Order details, invoice references, and chosen payment methods (Online Payment / Cash on Delivery). Note: We DO NOT store your card numbers or UPI PINs; all online transactions are securely encrypted by RBI-regulated payment gateways.
+
+2. How We Use Your Information
+• Processing, packaging, and dispatching your orders.
+• Sending order status notifications and tax invoices directly to your phone via WhatsApp / SMS.
+• Providing 1-on-1 boutique customer service and size advice.
+
+3. Data Protection & Sharing
+We never sell, rent, or trade your personal data with third-party advertising companies. Your details are shared solely with logistics partners (e.g., courier services) strictly to ensure safe delivery of your parcel.
+
+4. Contact Our Data Protection Team
+If you have any questions regarding your data or wish to update your details, contact us anytime at care@agalboutique.com or WhatsApp +91 63795 89711.`,
+      updated_at: "October 2026",
+    },
   },
   delivery_settings: {
     standardFee: 79,
@@ -140,7 +213,7 @@ const defaultCmsSettings = {
     { title: "Sarees & Handlooms", url: "/shop?category=sarees" },
     { title: "Kurtis & Tunics", url: "/shop?category=kurtis" },
     { title: "Full Sets & Anarkalis", url: "/shop?category=full-sets" },
-    { title: "Blouses & Stitching", url: "/shop?category=blouses" },
+    { title: "Plus Size Tops & Sets", url: "/shop" },
     { title: "Lehenga Sets", url: "/shop?category=lehengas" },
     { title: "Kidswear & Pattu Pavadai", url: "/shop?category=kidswear" },
     { title: "About Us", url: "/about" },

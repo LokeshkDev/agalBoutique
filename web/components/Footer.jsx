@@ -39,22 +39,25 @@ export default function Footer() {
           </Link>
 
           <h3 className="text-sm sm:text-base font-extrabold text-white mt-3.5 tracking-wide">
-            India&apos;s Premier Plus-Size Ethnic Wear Destination · Sizes 34 to 56 (XS to 6XL)
+            India&apos;s Premier Plus-Size Ethnic &amp; Western Wear Destination
           </h3>
           <p className="text-xs sm:text-sm text-[#e6d3e1] mt-1.5 max-w-2xl font-medium leading-relaxed">
-            Specialized in premium quality fabrics, 100+ varieties of sets, 2-piece &amp; 3-piece full sets, and tops with dupatta with easy availability and express delivery across India.
+            Specialized in plus size varieties, festival season collections, premium quality fabrics, western wear and festival wear. Explore 100+ varieties of sets, full sets, and tops with dupatta with easy availability and express delivery across India.
           </p>
 
           {/* Plus Size & Quality Trust Badges */}
           <div className="flex flex-wrap items-center justify-center gap-2 mt-4 max-w-3xl">
             <span className="px-3 py-1 rounded-full bg-white/10 text-white text-[11px] sm:text-xs font-bold border border-white/20">
-              ✦ Plus Size Specialist (Sizes 34–56)
+              ✦ Plus Size Varieties
             </span>
             <span className="px-3 py-1 rounded-full bg-white/10 text-white text-[11px] sm:text-xs font-bold border border-white/20">
-              ✦ Premium Quality Handloom &amp; Cambric Cotton
+              ✦ Festival Season Collections
             </span>
             <span className="px-3 py-1 rounded-full bg-white/10 text-white text-[11px] sm:text-xs font-bold border border-white/20">
-              ✦ 100+ Unique Varieties
+              ✦ Premium Quality Fabrics
+            </span>
+            <span className="px-3 py-1 rounded-full bg-white/10 text-white text-[11px] sm:text-xs font-bold border border-white/20">
+              ✦ Western Wear &amp; Festival Wear
             </span>
             <span className="px-3 py-1 rounded-full bg-white/10 text-white text-[11px] sm:text-xs font-bold border border-white/20">
               ✦ Full Sets &amp; Tops with Dupatta
@@ -115,13 +118,13 @@ export default function Footer() {
               </li>
               <li>
                 <Link href="/shop" className="hover:text-white transition-colors block py-0.5">
-                  Plus-Size Special (Sizes 34–56)
+                  Plus-Size Varieties &amp; Western Wear
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* 2. Customer Care Section */}
+          {/* 2. Customer Care & Policies Section */}
           <div className="border-b border-white/10 md:border-b-0 py-3 md:py-0">
             <button
               type="button"
@@ -130,7 +133,7 @@ export default function Footer() {
               aria-expanded={openSections.care}
             >
               <h4 className="text-sm font-bold uppercase tracking-wider text-white group-hover:text-pink-200 transition-colors">
-                Customer Care &amp; Trust
+                Policies &amp; Customer Care
               </h4>
               <span className="md:hidden text-pink-300 p-1">
                 {openSections.care ? <CaretUp size={18} weight="bold" /> : <CaretDown size={18} weight="bold" />}
@@ -153,18 +156,19 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/checkout" className="hover:text-white transition-colors block py-0.5">
-                  Track Order Status
+                <Link href="/terms" className="hover:text-white transition-colors block py-0.5 font-semibold text-pink-200">
+                  Terms and Conditions
                 </Link>
               </li>
-              <li className="text-[#a895a2] py-0.5">
-                ✦ Easy Availability &amp; Ready Stock
+              <li>
+                <Link href="/refund-policy" className="hover:text-white transition-colors block py-0.5 font-semibold text-pink-200">
+                  Refund Policy &amp; Exchanges
+                </Link>
               </li>
-              <li className="text-[#a895a2] py-0.5">
-                ✦ 7-Day Easy Returns &amp; Size Exchanges
-              </li>
-              <li className="text-[#a895a2] py-0.5">
-                ✦ Cash on Delivery &amp; All UPI Apps Accepted
+              <li>
+                <Link href="/privacy-policy" className="hover:text-white transition-colors block py-0.5 font-semibold text-pink-200">
+                  Privacy Policy
+                </Link>
               </li>
             </ul>
           </div>
@@ -221,7 +225,7 @@ export default function Footer() {
 
         {/* Bottom Copyright & Trust Line */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#b8a6b2] text-center sm:text-left">
-          <p>© {new Date().getFullYear()} Agal Boutique. Specialized in Plus Size Ethnic Wear, Full Sets &amp; Tops with Dupatta. Made with love in India.</p>
+          <p>© {new Date().getFullYear()} Agal Boutique. Specialized in Plus Size Varieties, Western Wear, Festival Wear, Full Sets &amp; Tops with Dupatta. Made with love in India.</p>
           <div className="flex items-center gap-4 font-semibold text-white">
             <span className="px-2 py-0.5 rounded bg-white/10 text-[11px] border border-white/20">₹ INR</span>
             <span className="text-[#e6d3e1]">Direct Weavers to Doorstep</span>

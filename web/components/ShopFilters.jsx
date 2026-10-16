@@ -23,42 +23,12 @@ const SORT_OPTIONS = [
   { label: "Biggest Discount", value: "discount" },
 ];
 
-const AVAILABLE_SIZES = [
-  "XS", "S", "M", "L", "XL", "XXL", "3XL", "Free Size",
-  "34", "36", "38", "40", "42", "44", "46", "48", "50", "52", "54", "56",
-];
-
-const AVAILABLE_FABRICS = [
-  "Cotton",
-  "Rayon",
-  "Mulmul Cotton",
-  "Chanderi Silk",
-  "Roman Silk",
-  "Raw Silk",
-  "Rayon Cotton",
-  "Two-Tone Cotton",
-  "Glass Silk",
-  "Tissue Silk",
-  "Cotton Blended",
-  "Chettinad Cotton",
-  "Butter Silk",
-  "Vietnam Silk",
-  "Mul Chanderi Silk",
-  "Dhabu Cotton",
-  "Pure Silk",
-  "Georgette",
-  "Organza",
-];
-
-const AVAILABLE_OCCASIONS = [
-  "Daily Wear",
-  "Office Wear",
-  "Festive",
-  "Party Wear",
-  "Wedding / Bridal",
-];
-
-export default function ShopFilters({ totalCount, categories = [], categoryName = "All Collections" }) {
+export default function ShopFilters({
+  totalCount,
+  categories = [],
+  categoryName = "All Collections",
+  dynamicFilters = { sizes: [], fabrics: [], colors: [] },
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -68,10 +38,19 @@ export default function ShopFilters({ totalCount, categories = [], categoryName 
   const currentSort = searchParams.get("sort") || "newest";
   const currentSize = searchParams.get("size") || "";
   const currentFabric = searchParams.get("fabric") || "";
+  const currentColor = searchParams.get("color") || "";
   const currentOccasion = searchParams.get("occasion") || "";
 
   const [sortSheetOpen, setSortSheetOpen] = useState(false);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+
+  // Dynamic filter lists from actual data
+  const sizesList =
+    dynamicFilters?.sizes && dynamicFilters.sizes.length > 0
+      ? dynamicFilters.sizes
+      : ["M", "L", "XL", "XXL", "3XL", "4XL", "5XL", "6XL", "7XL"];
+  const fabricsList = dynamicFilters?.fabrics || [];
+  const colorsList = dynamicFilters?.colors || [];
 
   // Helper to update query params
   const updateQuery = (updates) => {
@@ -105,6 +84,7 @@ export default function ShopFilters({ totalCount, categories = [], categoryName 
     currentSubcategory,
     currentSize,
     currentFabric,
+    currentColor,
     currentOccasion,
   ].filter(Boolean).length;
 
@@ -257,6 +237,19 @@ export default function ShopFilters({ totalCount, categories = [], categoryName 
                 onClick={() => updateQuery({ size: "" })}
                 className="hover:text-crimson cursor-pointer ml-0.5"
                 title="Remove size filter"
+              >
+                <X size={13} weight="bold" />
+              </button>
+            </span>
+          )}
+          {currentColor && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 border border-purple-200 text-xs text-plum font-semibold">
+              Color: {currentColor}
+              <button
+                type="button"
+                onClick={() => updateQuery({ color: "" })}
+                className="hover:text-crimson cursor-pointer ml-0.5"
+                title="Remove color filter"
               >
                 <X size={13} weight="bold" />
               </button>
@@ -454,83 +447,122 @@ export default function ShopFilters({ totalCount, categories = [], categoryName 
             );
           })()}
 
-          {/* 3. Sizes Group */}
-          <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-800 mb-3 flex items-center gap-1.5">
-              <span>Size Variants</span>
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {AVAILABLE_SIZES.map((sz) => {
-                const isSelected = currentSize === sz;
-                return (
+          {/* 3. Sizes Group (Dynamic from actual product data) */}
+          {sizesList && sizesList.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-gray-800 flex items-center gap-1.5">
+                  <span>Size (M to 7XL)</span>
+                </h4>
+                {currentSize && (
                   <button
-                    key={sz}
                     type="button"
-                    onClick={() => updateQuery({ size: isSelected ? "" : sz })}
-                    className={`h-9 min-w-[40px] px-3.5 rounded-full text-xs font-bold transition-all cursor-pointer border ${
-                      isSelected
-                        ? "bg-plum text-white border-plum shadow-xs ring-2 ring-purple-200"
-                        : "bg-[#fcf5f8] text-gray-800 border-[#f0dceb] hover:border-plum hover:bg-purple-50"
-                    }`}
+                    onClick={() => updateQuery({ size: "" })}
+                    className="text-xs text-plum font-bold hover:underline cursor-pointer"
                   >
-                    {sz}
+                    Reset Size
                   </button>
-                );
-              })}
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {sizesList.map((sz) => {
+                  const isSelected = currentSize === sz;
+                  return (
+                    <button
+                      key={sz}
+                      type="button"
+                      onClick={() => updateQuery({ size: isSelected ? "" : sz })}
+                      className={`h-9 min-w-[42px] px-3.5 rounded-full text-xs font-bold transition-all cursor-pointer border ${
+                        isSelected
+                          ? "bg-plum text-white border-plum shadow-xs ring-2 ring-purple-200"
+                          : "bg-[#fcf5f8] text-gray-800 border-[#f0dceb] hover:border-plum hover:bg-purple-50"
+                      }`}
+                    >
+                      {sz}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* 4. Fabric Group */}
-          <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-800 mb-3 flex items-center gap-1.5">
-              <span>Fabric Type</span>
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {AVAILABLE_FABRICS.map((fab) => {
-                const isSelected = currentFabric.toLowerCase() === fab.toLowerCase();
-                return (
+          {/* 4. Fabric Group (Dynamic from actual product data) */}
+          {fabricsList && fabricsList.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-gray-800 flex items-center gap-1.5">
+                  <span>Fabric</span>
+                </h4>
+                {currentFabric && (
                   <button
-                    key={fab}
                     type="button"
-                    onClick={() => updateQuery({ fabric: isSelected ? "" : fab })}
-                    className={`h-9 px-3.5 rounded-full text-xs font-bold transition-all cursor-pointer border ${
-                      isSelected
-                        ? "bg-plum text-white border-plum shadow-xs ring-2 ring-purple-200"
-                        : "bg-[#fcf5f8] text-gray-800 border-[#f0dceb] hover:border-plum hover:bg-purple-50"
-                    }`}
+                    onClick={() => updateQuery({ fabric: "" })}
+                    className="text-xs text-plum font-bold hover:underline cursor-pointer"
                   >
-                    {fab}
+                    Reset Fabric
                   </button>
-                );
-              })}
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {fabricsList.map((fab) => {
+                  const isSelected = currentFabric.toLowerCase() === fab.toLowerCase();
+                  return (
+                    <button
+                      key={fab}
+                      type="button"
+                      onClick={() => updateQuery({ fabric: isSelected ? "" : fab })}
+                      className={`h-9 px-3.5 rounded-full text-xs font-bold transition-all cursor-pointer border ${
+                        isSelected
+                          ? "bg-plum text-white border-plum shadow-xs ring-2 ring-purple-200"
+                          : "bg-[#fcf5f8] text-gray-800 border-[#f0dceb] hover:border-plum hover:bg-purple-50"
+                      }`}
+                    >
+                      {fab}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* 5. Occasion Group */}
-          <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-800 mb-3 flex items-center gap-1.5">
-              <span>Occasion</span>
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {AVAILABLE_OCCASIONS.map((occ) => {
-                const isSelected = currentOccasion.toLowerCase() === occ.toLowerCase();
-                return (
+          {/* 5. Color Group (Dynamic from actual product data) */}
+          {colorsList && colorsList.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-gray-800 flex items-center gap-1.5">
+                  <span>Color</span>
+                </h4>
+                {currentColor && (
                   <button
-                    key={occ}
                     type="button"
-                    onClick={() => updateQuery({ occasion: isSelected ? "" : occ })}
-                    className={`h-9 px-3.5 rounded-full text-xs font-bold transition-all cursor-pointer border ${
-                      isSelected
-                        ? "bg-plum text-white border-plum shadow-xs ring-2 ring-purple-200"
-                        : "bg-[#fcf5f8] text-gray-800 border-[#f0dceb] hover:border-plum hover:bg-purple-50"
-                    }`}
+                    onClick={() => updateQuery({ color: "" })}
+                    className="text-xs text-plum font-bold hover:underline cursor-pointer"
                   >
-                    {occ}
+                    Reset Color
                   </button>
-                );
-              })}
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {colorsList.map((col) => {
+                  const isSelected = currentColor.toLowerCase() === col.toLowerCase();
+                  return (
+                    <button
+                      key={col}
+                      type="button"
+                      onClick={() => updateQuery({ color: isSelected ? "" : col })}
+                      className={`h-9 px-3.5 rounded-full text-xs font-bold transition-all cursor-pointer border ${
+                        isSelected
+                          ? "bg-plum text-white border-plum shadow-xs ring-2 ring-purple-200"
+                          : "bg-[#fcf5f8] text-gray-800 border-[#f0dceb] hover:border-plum hover:bg-purple-50"
+                      }`}
+                    >
+                      {col}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* 6. Sort By Selection inside Drawer */}
           <div>

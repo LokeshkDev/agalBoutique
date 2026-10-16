@@ -46,6 +46,7 @@ import {
   WhatsappLogo,
   FileText,
   Printer,
+  ArrowUpRight,
 } from "@phosphor-icons/react";
 import ImageUploadInput from "@/components/ImageUploadInput";
 import {
@@ -505,7 +506,7 @@ export default function AdminPage() {
       { title: "Sarees & Handlooms", url: "/shop?category=sarees" },
       { title: "Kurtis & Tunics", url: "/shop?category=kurtis" },
       { title: "Full Sets & Anarkalis", url: "/shop?category=full-sets" },
-      { title: "Blouses & Stitching", url: "/shop?category=blouses" },
+      { title: "Plus Size Tops & Sets", url: "/shop" },
       { title: "Lehenga Sets", url: "/shop?category=lehengas" },
       { title: "Kidswear & Pattu Pavadai", url: "/shop?category=kidswear" },
       { title: "About Us", url: "/about" },
@@ -560,6 +561,7 @@ export default function AdminPage() {
   const [cmsSaveStatus, setCmsSaveStatus] = useState("");
   const [cmsSubTab, setCmsSubTab] = useState("banners");
   const [deliverySubTab, setDeliverySubTab] = useState("online");
+  const [policySubTab, setPolicySubTab] = useState("terms");
 
   // CMS Sub-Tabs Swipe / Drag & Scroll States
   const cmsTabsRef = useRef(null);
@@ -2528,6 +2530,7 @@ export default function AdminPage() {
                   { id: "header_menu", label: "Category Sub-Nav Menu", icon: List, count: (cms.header_nav_menu || []).length },
                   { id: "about_us", label: "About Us Page", icon: BookOpen },
                   { id: "contact_us", label: "Contact Us & Store", icon: PhoneCall },
+                  { id: "policy_pages", label: "Policy Pages (Terms, Refund, Privacy)", icon: FileText },
                 ].map((tab) => {
                   const isActive = cmsSubTab === tab.id;
                   const Icon = tab.icon;
@@ -3410,6 +3413,179 @@ export default function AdminPage() {
                     </button>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* SUB-TAB 7: POLICY PAGES (TERMS, REFUND, PRIVACY) */}
+            {cmsSubTab === "policy_pages" && (
+              <div className="space-y-6 animate-fade-in max-w-4xl">
+                {/* Policy Page Selector Pills */}
+                <div className="flex items-center gap-2 p-1.5 bg-gray-100 rounded-xl max-w-fit">
+                  {[
+                    { id: "terms", label: "Terms & Conditions", path: "/terms" },
+                    { id: "refund", label: "Refund Policy", path: "/refund-policy" },
+                    { id: "privacy", label: "Privacy Policy", path: "/privacy-policy" },
+                  ].map((pTab) => (
+                    <button
+                      key={pTab.id}
+                      type="button"
+                      onClick={() => setPolicySubTab(pTab.id)}
+                      className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        policySubTab === pTab.id
+                          ? "bg-plum text-white shadow-xs"
+                          : "text-gray-700 hover:text-plum hover:bg-gray-200/60"
+                      }`}
+                    >
+                      {pTab.label}
+                    </button>
+                  ))}
+                </div>
+
+                {(() => {
+                  const currentPolicies = cms.policy_pages || {};
+                  const currentPageData = currentPolicies[policySubTab] || {};
+                  const defaultPlaceholders = {
+                    terms: {
+                      title: "Terms and Conditions",
+                      subtitle: "Please review our terms of service, boutique policies, and order agreements.",
+                      banner_image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=1200&q=80",
+                      path: "/terms",
+                    },
+                    refund: {
+                      title: "Refund & Exchange Policy",
+                      subtitle: "Our commitment to hassle-free 7-day returns, size exchanges, and customer satisfaction.",
+                      banner_image: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1200&q=80",
+                      path: "/refund-policy",
+                    },
+                    privacy: {
+                      title: "Privacy Policy",
+                      subtitle: "How Agal Boutique protects your personal information, contact details, and transactions.",
+                      banner_image: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=1200&q=80",
+                      path: "/privacy-policy",
+                    },
+                  };
+
+                  const placeholderInfo = defaultPlaceholders[policySubTab] || defaultPlaceholders.terms;
+                  const currentTitle = currentPageData.title !== undefined ? currentPageData.title : placeholderInfo.title;
+                  const currentSubtitle = currentPageData.subtitle !== undefined ? currentPageData.subtitle : placeholderInfo.subtitle;
+                  const currentImage = currentPageData.banner_image || placeholderInfo.banner_image;
+                  const currentContent = currentPageData.content || "";
+
+                  const updateCurrentPolicy = (field, value) => {
+                    const updated = {
+                      ...currentPolicies,
+                      [policySubTab]: {
+                        ...placeholderInfo,
+                        ...currentPageData,
+                        [field]: value,
+                        updated_at: new Date().toLocaleDateString("en-IN", { month: "long", year: "numeric" }),
+                      },
+                    };
+                    setCms({ ...cms, policy_pages: updated });
+                  };
+
+                  return (
+                    <div className="p-6 bg-gray-50 border border-gray-200 rounded-2xl space-y-5">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-200 pb-3">
+                        <div>
+                          <h3 className="text-base font-bold text-plum border-l-4 border-plum pl-2.5">
+                            Editing: {placeholderInfo.title}
+                          </h3>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            Manage header banner image, titles, and text for this customer policy page.
+                          </p>
+                        </div>
+                        <a
+                          href={placeholderInfo.path}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-gray-300 text-xs font-bold text-gray-700 hover:text-plum shadow-2xs shrink-0 self-start sm:self-auto"
+                        >
+                          <span>View Live Page</span>
+                          <ArrowUpRight size={14} />
+                        </a>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-gray-800 mb-1">Page Title</label>
+                          <input
+                            type="text"
+                            value={currentTitle}
+                            placeholder={placeholderInfo.title}
+                            onChange={(e) => updateCurrentPolicy("title", e.target.value)}
+                            className="w-full h-10 px-3 text-xs border border-gray-300 rounded-xl focus:outline-none focus:border-plum bg-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-gray-800 mb-1">Subtitle / Tagline</label>
+                          <input
+                            type="text"
+                            value={currentSubtitle}
+                            placeholder={placeholderInfo.subtitle}
+                            onChange={(e) => updateCurrentPolicy("subtitle", e.target.value)}
+                            className="w-full h-10 px-3 text-xs border border-gray-300 rounded-xl focus:outline-none focus:border-plum bg-white"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Banner Image with Upload & Placeholder preview */}
+                      <div className="space-y-2 bg-white p-4 rounded-xl border border-gray-200">
+                        <ImageUploadInput
+                          label={`${placeholderInfo.title} Header Banner Image`}
+                          recommendedSize="1200 × 500 px (Landscape Banner)"
+                          value={currentPageData.banner_image || ""}
+                          placeholder={placeholderInfo.banner_image}
+                          onChange={(url) => updateCurrentPolicy("banner_image", url)}
+                        />
+                        {/* Placeholder fallback visual note */}
+                        <div className="flex items-center gap-3 pt-2 text-xs text-gray-500 border-t border-gray-100">
+                          <span className="font-semibold">Current Active Banner:</span>
+                          <img
+                            src={currentImage}
+                            alt="Active Banner Preview"
+                            className="h-10 w-24 object-cover rounded-md border border-gray-200"
+                          />
+                          <span className="text-[11px] text-gray-400">
+                            {currentPageData.banner_image ? "Custom Upload (Cloudflare R2)" : "Default Theme Placeholder"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-bold text-gray-800">
+                            Policy Terms & Content
+                          </label>
+                          <span className="text-[11px] text-gray-400">
+                            Separate clauses or paragraphs with double line breaks
+                          </span>
+                        </div>
+                        <textarea
+                          rows={12}
+                          value={currentContent}
+                          placeholder="Enter your policy clauses, rules, return conditions, or legal terms..."
+                          onChange={(e) => updateCurrentPolicy("content", e.target.value)}
+                          className="w-full p-3.5 text-xs font-sans border border-gray-300 rounded-xl focus:outline-none focus:border-plum bg-white leading-relaxed"
+                        />
+                      </div>
+
+                      <div className="pt-2 flex items-center justify-between border-t border-gray-200">
+                        <span className="text-xs text-gray-500">
+                          Changes persist live to MySQL database and update storefront immediately.
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleSaveCms("policy_pages", cms.policy_pages || currentPolicies)}
+                          className="px-6 py-2.5 bg-plum text-white text-xs font-extrabold rounded-xl hover:bg-plum-900 transition-colors cursor-pointer shadow-md flex items-center gap-2"
+                        >
+                          <FileText size={16} />
+                          <span>Save {placeholderInfo.title}</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>

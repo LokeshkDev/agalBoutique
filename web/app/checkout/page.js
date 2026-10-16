@@ -68,6 +68,11 @@ export default function CheckoutPage() {
     useShallow((s) => ({ items: s.items || [], clear: s.clear }))
   );
 
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
+
   // Active step: 1 = Address & Contact, 2 = Payment
   const [step, setStep] = useState(1);
   const [orderComplete, setOrderComplete] = useState(false);
@@ -90,9 +95,9 @@ export default function CheckoutPage() {
     tag: "Home",
   });
 
-  // Payment method: initially empty until user explicitly chooses online or cod
-  // Delivery charge will NOT be added until online or cod is selected
-  const [paymentMethod, setPaymentMethod] = useState("");
+  // Payment method: auto-selected to online by default or when only one option is available
+  // Delivery charge is dynamically calculated and displayed
+  const [paymentMethod, setPaymentMethod] = useState("online");
 
   // Dynamic Delivery settings from Admin CMS with Online and COD modes
   const [deliverySettings, setDeliverySettings] = useState({
@@ -142,11 +147,17 @@ export default function CheckoutPage() {
           },
         });
 
-        // Automatically align selected payment method if current one is disabled
-        if (!onlineEnabled && paymentMethod === "online") {
+        // Auto-select payment method if only one option is enabled or if current is disabled
+        if (onlineEnabled && !codEnabled) {
+          setPaymentMethod("online");
+        } else if (!onlineEnabled && codEnabled) {
+          setPaymentMethod("cod");
+        } else if (!onlineEnabled && paymentMethod === "online") {
           setPaymentMethod(codEnabled ? "cod" : "");
         } else if (!codEnabled && paymentMethod === "cod") {
           setPaymentMethod(onlineEnabled ? "online" : "");
+        } else if (!paymentMethod && onlineEnabled) {
+          setPaymentMethod("online");
         }
       }
     });
@@ -466,7 +477,7 @@ export default function CheckoutPage() {
 
           <div className="flex flex-col sm:flex-row gap-3">
             <a
-              href={`https://wa.me/919876543210?text=Hello%20Agal%20Boutique,%20I%20just%20placed%20order%20${orderNumber}%20under%20the%20name%20${encodeURIComponent(address.name)}.`}
+              href={`https://wa.me/916379589711?text=Hello%20Agal%20Boutique,%20I%20just%20placed%20order%20${orderNumber}%20under%20the%20name%20${encodeURIComponent(address.name)}.`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex-1 inline-flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-[5px] border border-gray-300 bg-white text-gray-700 font-bold text-xs hover:bg-gray-50 transition-all shadow-xs cursor-pointer"
@@ -480,6 +491,15 @@ export default function CheckoutPage() {
             </Button>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (!hydrated) {
+    return (
+      <div className="max-w-[var(--container)] mx-auto px-4 lg:px-8 py-20 text-center font-sans">
+        <div className="w-10 h-10 border-3 border-plum border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+        <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Loading your bag...</p>
       </div>
     );
   }

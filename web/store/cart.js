@@ -3,10 +3,22 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+const getInitialItems = () => {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem("ab-cart");
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed?.state?.items) ? parsed.state.items : [];
+  } catch (e) {
+    return [];
+  }
+};
+
 export const useCart = create(
   persist(
     (set, get) => ({
-      items: [],
+      items: getInitialItems(),
       open: false,
 
       openCart: () => set({ open: true }),
@@ -72,6 +84,19 @@ export const useCart = create(
     {
       name: "ab-cart",
       partialize: (state) => ({ items: state.items }),
+      onRehydrateStorage: () => (state) => {
+        if (state && typeof window !== "undefined") {
+          try {
+            const raw = localStorage.getItem("ab-cart");
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              if (Array.isArray(parsed?.state?.items) && parsed.state.items.length > 0) {
+                state.items = parsed.state.items;
+              }
+            }
+          } catch (e) {}
+        }
+      },
     }
   )
 );
@@ -157,14 +182,7 @@ if (typeof window !== "undefined") {
   const syncFromLocalStorage = () => {
     try {
       const raw = localStorage.getItem("ab-cart");
-      if (!raw) {
-        if (useCart.getState().items.length > 0) {
-          isSyncing = true;
-          useCart.setState({ items: [] });
-          isSyncing = false;
-        }
-        return;
-      }
+      if (!raw) return;
       const parsed = JSON.parse(raw);
       const storedItems = parsed?.state?.items;
       if (Array.isArray(storedItems)) {

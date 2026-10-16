@@ -6,7 +6,7 @@ import { Sparkle } from "@phosphor-icons/react";
 
 export default function AnnouncementBar() {
   const [announcement, setAnnouncement] = useState({
-    text: "✨ Plus Size Specialist (Sizes 34–56) | 100+ Varieties of Sets, Full Sets & Tops with Dupatta | Premium Quality & Free Delivery above ₹999",
+    text: "✨ Plus Size Specialist (M to 7XL) | 100+ Varieties of Sets, Full Sets & Tops with Dupatta | Premium Quality & Free Delivery above ₹999",
     enabled: true,
   });
 

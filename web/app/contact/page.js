@@ -9,9 +9,9 @@ import { WhatsappLogo, Phone, EnvelopeSimple, MapPin, Clock, PaperPlaneRight, Ch
 
 const defaultContactCms = {
   title: "Visit Our Boutique or Get in Touch",
-  subtitle: "We're here to assist you with orders, custom stitching, or styling queries.",
-  whatsapp: "+91 98765 43210",
-  phone: "+91 98765 43210",
+  subtitle: "We're here to assist you with orders, plus size sizing, or styling queries.",
+  whatsapp: "+91 63795 89711",
+  phone: "+91 63795 89711",
   email: "support@agalboutique.com",
   address: "124 Boutique Street, Opp. Panagal Park, T. Nagar, Chennai, Tamil Nadu 600017",
   hours: "Monday – Saturday: 10:00 AM – 9:00 PM | Sunday: 11:00 AM – 7:00 PM",
@@ -21,9 +21,6 @@ const defaultContactCms = {
 
 export default function ContactPage() {
   const [contact, setContact] = useState(defaultContactCms);
-  const [form, setForm] = useState({ name: "", phone: "", email: "", subject: "Order Inquiry", message: "" });
-  const [submitted, setSubmitted] = useState(false);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     getCmsSettings().then((res) => {
@@ -32,16 +29,6 @@ export default function ContactPage() {
       }
     });
   }, []);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setSubmitted(true);
-      setForm({ name: "", phone: "", email: "", subject: "Order Inquiry", message: "" });
-    }, 800);
-  };
 
   return (
     <>
@@ -81,7 +68,7 @@ export default function ContactPage() {
             <h3 className="text-xs font-bold text-gray-900">WhatsApp Support</h3>
             <p className="text-xs text-gray-600 font-semibold">{contact.whatsapp}</p>
             <a
-              href={`https://wa.me/${contact.whatsapp?.replace(/\D/g, "")}`}
+              href={`https://wa.me/${contact.whatsapp?.replace(/\D/g, "") || "916379589711"}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-block text-[11px] font-bold text-emerald-700 hover:underline pt-1"
@@ -96,7 +83,12 @@ export default function ContactPage() {
             </div>
             <h3 className="text-xs font-bold text-gray-900">Phone Helpline</h3>
             <p className="text-xs text-gray-600 font-semibold">{contact.phone}</p>
-            <span className="text-[11px] text-gray-400 block pt-1">Call for urgent orders</span>
+            <a
+              href={`tel:${contact.phone?.replace(/\s+/g, "") || "+916379589711"}`}
+              className="inline-block text-[11px] font-bold text-plum hover:underline pt-1"
+            >
+              Call Us &rarr;
+            </a>
           </div>
 
           <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-2">
@@ -105,7 +97,12 @@ export default function ContactPage() {
             </div>
             <h3 className="text-xs font-bold text-gray-900">Email Inquiry</h3>
             <p className="text-xs text-gray-600 font-semibold truncate">{contact.email}</p>
-            <span className="text-[11px] text-gray-400 block pt-1">Replies within 24h</span>
+            <a
+              href={`mailto:${contact.email}`}
+              className="inline-block text-[11px] font-bold text-blue-700 hover:underline pt-1"
+            >
+              Send Email &rarr;
+            </a>
           </div>
 
           <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-2">
@@ -117,128 +114,40 @@ export default function ContactPage() {
           </div>
         </div>
 
-        {/* Main Grid: Form + Address Map */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Inquiry Form */}
-          <div className="lg:col-span-7 bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-xs space-y-5">
-            <div>
-              <h2 className="text-lg font-bold text-gray-900">Send Us a Direct Message</h2>
-              <p className="text-xs text-gray-500">Fill in your inquiry below and our boutique fashion team will respond immediately.</p>
-            </div>
-
-            {submitted ? (
-              <div className="p-6 bg-emerald-50 border border-emerald-200 rounded-xl text-center space-y-2">
-                <CheckCircle size={44} className="text-emerald-600 mx-auto" weight="fill" />
-                <h3 className="text-sm font-bold text-emerald-900">Inquiry Sent Successfully!</h3>
-                <p className="text-xs text-emerald-700">Thank you for reaching out. We will call or WhatsApp you back shortly.</p>
-                <button
-                  onClick={() => setSubmitted(false)}
-                  className="mt-3 text-xs font-bold text-plum hover:underline cursor-pointer"
-                >
-                  Send another message
-                </button>
+        {/* Boutique Storefront Address & Google Maps Embed */}
+        <div className="bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-xs space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-plum/10 text-plum flex items-center justify-center shrink-0">
+                <MapPin size={24} />
               </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Your Full Name</label>
-                    <input
-                      type="text"
-                      required
-                      value={form.name}
-                      onChange={(e) => setForm({ ...form, name: e.target.value })}
-                      placeholder="e.g. Anitha Kumar"
-                      className="w-full h-10 px-3 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-plum"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Phone / WhatsApp</label>
-                    <input
-                      type="tel"
-                      required
-                      value={form.phone}
-                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                      placeholder="e.g. 9876543210"
-                      className="w-full h-10 px-3 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-plum"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Email Address</label>
-                    <input
-                      type="email"
-                      required
-                      value={form.email}
-                      onChange={(e) => setForm({ ...form, email: e.target.value })}
-                      placeholder="anitha@example.com"
-                      className="w-full h-10 px-3 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-plum"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Subject</label>
-                    <select
-                      value={form.subject}
-                      onChange={(e) => setForm({ ...form, subject: e.target.value })}
-                      className="w-full h-10 px-3 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-plum bg-white"
-                    >
-                      <option value="Order Inquiry">Order Inquiry / Tracking</option>
-                      <option value="Custom Stitching">Custom Stitching Request</option>
-                      <option value="Bulk Order">Bridal / Bulk Order</option>
-                      <option value="General Feedback">General Question</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Message Details</label>
-                  <textarea
-                    rows={4}
-                    required
-                    value={form.message}
-                    onChange={(e) => setForm({ ...form, message: e.target.value })}
-                    placeholder="Provide details about your query or stitching requirements..."
-                    className="w-full p-3 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-plum"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full h-11 bg-plum text-white font-bold text-xs rounded-lg hover:bg-plum-900 transition-colors shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                >
-                  <PaperPlaneRight size={16} />
-                  <span>{loading ? "Sending Message..." : "Submit Inquiry"}</span>
-                </button>
-              </form>
-            )}
-          </div>
-
-          {/* Address & Google Maps Embed */}
-          <div className="lg:col-span-5 bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-xs space-y-4">
-            <div className="flex items-start gap-3 border-b border-gray-100 pb-3">
-              <MapPin size={24} className="text-plum shrink-0 mt-0.5" />
               <div>
-                <h3 className="text-sm font-bold text-gray-900">Boutique Storefront Address</h3>
-                <p className="text-xs text-gray-600 mt-1 leading-relaxed font-medium">
+                <h3 className="text-base sm:text-lg font-bold text-gray-900">Boutique Storefront Address</h3>
+                <p className="text-xs sm:text-sm text-gray-600 mt-0.5 leading-relaxed font-medium">
                   {contact.address}
                 </p>
               </div>
             </div>
 
-            {/* Google Map iframe */}
-            <div className="h-64 rounded-xl overflow-hidden border border-gray-200 bg-gray-100">
-              <iframe
-                title="Boutique Location Map"
-                src={contact.map_url || "https://maps.google.com/maps?q=T.+Nagar,+Chennai&t=&z=13&ie=UTF8&iwloc=&output=embed"}
-                className="w-full h-full border-0"
-                loading="lazy"
-              />
-            </div>
+            <a
+              href={`https://wa.me/${contact.whatsapp?.replace(/\D/g, "") || "916379589711"}?text=Hello%20Agal%20Boutique,%20I%20would%20like%20directions%20or%20an%20in-store%20styling%20appointment.`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#25D366] text-white text-xs font-extrabold hover:bg-[#20b858] transition-all shadow-xs shrink-0 cursor-pointer self-start sm:self-auto"
+            >
+              <WhatsappLogo size={18} weight="fill" />
+              <span>Book Styling Appointment</span>
+            </a>
+          </div>
+
+          {/* Google Map iframe */}
+          <div className="h-80 sm:h-96 rounded-xl overflow-hidden border border-gray-200 bg-gray-100 shadow-inner">
+            <iframe
+              title="Boutique Location Map"
+              src={contact.map_url || "https://maps.google.com/maps?q=T.+Nagar,+Chennai&t=&z=13&ie=UTF8&iwloc=&output=embed"}
+              className="w-full h-full border-0"
+              loading="lazy"
+            />
           </div>
         </div>
       </div>

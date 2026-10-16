@@ -320,22 +320,22 @@ export const products = [
   },
   {
     id: "blouse-002",
-    slug: "custom-stitching-blouse",
-    name: "Custom Stitching Blouse",
+    slug: "plus-size-silk-blouse",
+    name: "Plus Size Silk Blouse",
     category: "Blouses",
-    description: "Bespoke tailoring service tailored to your exact measurements. Choose your neckline, sleeve length, and piping options. Ready in 3–5 working days.",
+    description: "Premium plus-size padded blouse in rich raw silk with comfortable cotton lining and generous 2-inch margins for a flawless fit.",
     fabric: "Raw Silk / Cotton Silk",
     care: "Dry clean only",
-    occasion: ["Bridal", "Festive", "Custom"],
+    occasion: ["Bridal", "Festive", "Party Wear"],
     price: 799,
     mrp: 1499,
     sizes: [
-      { label: "Custom Fit", stock: 99 }
+      { label: "M", stock: 12 }, { label: "L", stock: 15 }, { label: "XL", stock: 10 }, { label: "XXL", stock: 8 }, { label: "3XL", stock: 6 }, { label: "4XL", stock: 4 }
     ],
     images: [
-      { url: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800&q=80", alt: "Tailored custom stitched blouse" },
+      { url: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800&q=80", alt: "Plus size silk blouse" },
       { url: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=800&q=80", alt: "Neckline piping workmanship" },
-      { url: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800&q=80", alt: "Sleeve embroidery custom finish" }
+      { url: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800&q=80", alt: "Sleeve embroidery finish" }
     ],
     rating: { avg: 4.9, count: 310 },
     isNew: true,

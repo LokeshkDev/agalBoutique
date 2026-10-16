@@ -53,6 +53,7 @@ export default function ProductGallery({ images = [], name }) {
           alt={typeof images[selectedIdx] === "object" ? (images[selectedIdx]?.alt || name) : name}
           fill
           priority
+          fetchPriority="high"
           sizes="(max-width: 1023px) 100vw, 550px"
           className="object-cover transition-all duration-200"
           onError={() => setMainImgSrc("/logo.png")}

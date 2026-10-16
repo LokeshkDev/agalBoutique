@@ -33,19 +33,19 @@ export default function HeroSection() {
               id="hero-heading"
               className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 leading-[1.15] tracking-tight"
             >
-              Handcrafted Sarees, Kurtis & Bespoke Tailoring
+              Plus Size Ethnic &amp; Western Wear
             </h1>
 
             <p className="text-sm sm:text-base text-gray-600 leading-relaxed max-w-lg font-sans">
-              Discover authentic Kanchipuram silks, breathable cambric cotton kurtis, and 3–5 day custom blouse stitching with express delivery across India.
+              Discover premium plus size kurtis, full sets, tops with dupatta, and festival wear in sizes M to 7XL with express delivery across India.
             </p>
 
             <div className="pt-2 flex flex-wrap items-center gap-3">
               <Button href="/shop" variant="primary">
                 Shop All Collections
               </Button>
-              <Button href="/shop?category=blouses" variant="outline">
-                Custom Blouse Stitching
+              <Button href="/shop" variant="outline">
+                Plus Size Varieties (M–7XL)
               </Button>
             </div>
 
