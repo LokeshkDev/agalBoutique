@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, HeadBucketCommand } from "@aws-sdk/client-s3";
 import sharp from "sharp";
 import path from "path";
 import fs from "fs";
@@ -21,8 +21,8 @@ for (const envPath of envLocations) {
   }
 }
 
-// Built-in Agal Boutique Cloudflare R2 credentials (guarantees production uploads never fail even if hosting dashboard env was missed)
-const R2_CONFIG = {
+// Built-in Agal Boutique Cloudflare R2 credentials (guarantees production uploads never fail even if hosting dashboard env was misconfigured)
+export const R2_CONFIG = {
   accountId: "6fe2361275ece85111f15edddce8cd87",
   accessKeyId: "cf87e251b0604edfd5552214e46f4cd1",
   secretAccessKey: "d152f63560c6dbe225027a7be38388397281107b5da3e664af33116740f5515c",
@@ -30,30 +30,85 @@ const R2_CONFIG = {
   publicDomain: "https://pub-392d2e841ea042c7962ed83ddd3d4ad5.r2.dev",
 };
 
-// Initialize S3Client for Cloudflare R2
-function getR2Client() {
-  let accountId = (process.env.R2_ACCOUNT_ID || R2_CONFIG.accountId).trim();
-  const accessKeyId = (process.env.R2_ACCESS_KEY_ID || R2_CONFIG.accessKeyId).trim();
-  const secretAccessKey = (process.env.R2_SECRET_ACCESS_KEY || R2_CONFIG.secretAccessKey).trim();
+/**
+ * Strips quotes, backticks, and whitespace from environment variable strings
+ * Commonly needed when Render / Vercel dashboard inputs include wrapping quotes.
+ */
+function cleanEnvValue(val) {
+  if (!val || typeof val !== "string") return "";
+  return val.trim().replace(/^["'`]|["'`]$/g, "").trim();
+}
 
-  // Sanitize accountId in case full URL was passed in .env
-  accountId = accountId
+/**
+ * Returns validated R2 configuration with automatic fallback to built-in verified credentials.
+ */
+export function getResolvedR2Config() {
+  let accountId = cleanEnvValue(process.env.R2_ACCOUNT_ID)
     .replace(/^https?:\/\//, "")
     .replace(/\.r2\.cloudflarestorage\.com.*$/, "")
     .replace(/\/$/, "");
-
-  if (!accountId || !accessKeyId || !secretAccessKey) {
-    return null;
+  if (!accountId || accountId.length !== 32) {
+    accountId = R2_CONFIG.accountId;
   }
 
+  let accessKeyId = cleanEnvValue(process.env.R2_ACCESS_KEY_ID);
+  if (!accessKeyId || accessKeyId.length !== 32) {
+    accessKeyId = R2_CONFIG.accessKeyId;
+  }
+
+  let secretAccessKey = cleanEnvValue(process.env.R2_SECRET_ACCESS_KEY);
+  if (!secretAccessKey || secretAccessKey.length !== 64) {
+    secretAccessKey = R2_CONFIG.secretAccessKey;
+  }
+
+  let bucketName = cleanEnvValue(process.env.R2_BUCKET_NAME);
+  // Guard against legacy/invalid bucket names
+  if (!bucketName || bucketName === "agal-boutique-images") {
+    bucketName = R2_CONFIG.bucketName;
+  }
+
+  let publicDomain = cleanEnvValue(process.env.R2_PUBLIC_DOMAIN);
+  if (!publicDomain || !publicDomain.startsWith("http")) {
+    publicDomain = R2_CONFIG.publicDomain;
+  }
+  publicDomain = publicDomain.replace(/\/+$/, "");
+
+  return { accountId, accessKeyId, secretAccessKey, bucketName, publicDomain };
+}
+
+/**
+ * Creates an S3Client instance for Cloudflare R2
+ */
+export function createR2Client(cfg = getResolvedR2Config()) {
   return new S3Client({
     region: "auto",
-    endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+    endpoint: `https://${cfg.accountId}.r2.cloudflarestorage.com`,
     credentials: {
-      accessKeyId,
-      secretAccessKey,
+      accessKeyId: cfg.accessKeyId,
+      secretAccessKey: cfg.secretAccessKey,
     },
   });
+}
+
+/**
+ * Checks Cloudflare R2 connectivity
+ */
+export async function testR2Connection() {
+  const config = getResolvedR2Config();
+  const client = createR2Client(config);
+  try {
+    await client.send(new HeadBucketCommand({ Bucket: config.bucketName }));
+    return { ok: true, bucket: config.bucketName, publicDomain: config.publicDomain };
+  } catch (err) {
+    // If resolved config failed, test known-good R2_CONFIG
+    try {
+      const fallbackClient = createR2Client(R2_CONFIG);
+      await fallbackClient.send(new HeadBucketCommand({ Bucket: R2_CONFIG.bucketName }));
+      return { ok: true, bucket: R2_CONFIG.bucketName, publicDomain: R2_CONFIG.publicDomain, fallback: true };
+    } catch (fallbackErr) {
+      return { ok: false, error: fallbackErr.message };
+    }
+  }
 }
 
 /**
@@ -77,16 +132,39 @@ export async function optimizeAndUploadImage(buffer, originalName = "image.jpg")
   const filename = `${Date.now()}-${path.parse(originalName).name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.webp`;
   const key = `uploads/${filename}`;
 
-  const r2Client = getR2Client();
-  const bucketName = (process.env.R2_BUCKET_NAME || R2_CONFIG.bucketName).trim();
-  const publicDomain = (process.env.R2_PUBLIC_DOMAIN || R2_CONFIG.publicDomain).trim();
+  // 2. Primary Upload attempt using resolved sanitized configuration
+  const config = getResolvedR2Config();
+  const primaryClient = createR2Client(config);
 
-  // 2. Upload to Cloudflare R2
-  if (r2Client) {
+  try {
+    await primaryClient.send(
+      new PutObjectCommand({
+        Bucket: config.bucketName,
+        Key: key,
+        Body: optimizedBuffer,
+        ContentType: "image/webp",
+        CacheControl: "public, max-age=31536000, immutable",
+      })
+    );
+
+    const publicUrl = `${config.publicDomain}/${key}`;
+    console.log(`[Cloudflare R2] Successfully uploaded ${key} -> ${publicUrl}`);
+
+    return {
+      url: publicUrl,
+      originalSizeKb,
+      optimizedSizeKb,
+      storage: "Cloudflare R2",
+    };
+  } catch (err) {
+    console.warn(`[Cloudflare R2 Primary Upload Warning]: ${err.message}. Retrying with direct verified credentials...`);
+
+    // 3. Fallback retry using guaranteed known-good R2_CONFIG
     try {
-      await r2Client.send(
+      const fallbackClient = createR2Client(R2_CONFIG);
+      await fallbackClient.send(
         new PutObjectCommand({
-          Bucket: bucketName,
+          Bucket: R2_CONFIG.bucketName,
           Key: key,
           Body: optimizedBuffer,
           ContentType: "image/webp",
@@ -94,9 +172,8 @@ export async function optimizeAndUploadImage(buffer, originalName = "image.jpg")
         })
       );
 
-      const cleanDomain = publicDomain.endsWith("/") ? publicDomain.slice(0, -1) : publicDomain;
-      const publicUrl = `${cleanDomain}/${key}`;
-      console.log(`[Cloudflare R2] Successfully uploaded ${key} -> ${publicUrl}`);
+      const publicUrl = `${R2_CONFIG.publicDomain}/${key}`;
+      console.log(`[Cloudflare R2 Fallback] Successfully uploaded ${key} -> ${publicUrl}`);
 
       return {
         url: publicUrl,
@@ -104,33 +181,18 @@ export async function optimizeAndUploadImage(buffer, originalName = "image.jpg")
         optimizedSizeKb,
         storage: "Cloudflare R2",
       };
-    } catch (err) {
-      console.error("[Cloudflare R2 Upload Error]:", err.message, "Attempting retry...");
-      try {
-        await r2Client.send(
-          new PutObjectCommand({
-            Bucket: bucketName,
-            Key: key,
-            Body: optimizedBuffer,
-            ContentType: "image/webp",
-            CacheControl: "public, max-age=31536000, immutable",
-          })
-        );
-        const cleanDomain = publicDomain.endsWith("/") ? publicDomain.slice(0, -1) : publicDomain;
-        const publicUrl = `${cleanDomain}/${key}`;
-        return {
-          url: publicUrl,
-          originalSizeKb,
-          optimizedSizeKb,
-          storage: "Cloudflare R2",
-        };
-      } catch (retryErr) {
-        console.error("[Cloudflare R2 Retry Failed]:", retryErr.message);
+    } catch (retryErr) {
+      console.error("[Cloudflare R2 Hard Failure]:", retryErr.message);
+
+      // In production or on Render/Vercel, DO NOT silently dump to local ephemeral disk
+      const isProduction = process.env.NODE_ENV === "production" || process.env.RENDER || process.env.VERCEL;
+      if (isProduction) {
+        throw new Error(`Cloudflare R2 storage upload failed: ${retryErr.message || "Network/Credential error"}`);
       }
     }
   }
 
-  // 3. Fallback to local uploads folder only if R2 is strictly unreachable
+  // 4. Local uploads folder fallback ONLY during offline development
   const publicDir = path.join(__dirname, "../../public/uploads");
   if (!fs.existsSync(publicDir)) {
     fs.mkdirSync(publicDir, { recursive: true });

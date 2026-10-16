@@ -1,5 +1,5 @@
 import multer from "multer";
-import { optimizeAndUploadImage } from "../services/r2UploadService.js";
+import { optimizeAndUploadImage, testR2Connection } from "../services/r2UploadService.js";
 
 // Multer memory storage (buffer held in memory for Sharp processing)
 const storage = multer.memoryStorage();
@@ -35,13 +35,17 @@ export async function uploadImage(req, res) {
 
     const result = await optimizeAndUploadImage(req.file.buffer, req.file.originalname);
 
+    const orig = result.originalSizeKb || 1;
+    const opt = result.optimizedSizeKb || 1;
+    const savedPercent = Math.max(0, Math.round(((orig - opt) / orig) * 100));
+
     res.json({
       success: true,
       message: "Image uploaded and optimized successfully",
       url: result.url,
       originalSizeKb: result.originalSizeKb,
       optimizedSizeKb: result.optimizedSizeKb,
-      savedPercent: Math.round(((result.originalSizeKb - result.optimizedSizeKb) / result.originalSizeKb) * 100),
+      savedPercent,
       storage: result.storage,
     });
   } catch (err) {
@@ -58,4 +62,21 @@ export async function uploadImage(req, res) {
     });
   }
 }
+
+// GET /api/admin/upload/status
+export async function checkUploadStatus(req, res) {
+  try {
+    const status = await testR2Connection();
+    res.json({
+      success: status.ok,
+      ...status,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    });
+  }
+}
+
 

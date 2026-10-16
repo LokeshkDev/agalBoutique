@@ -1,5 +1,19 @@
 // Frontend API Client to communicate with Express/MySQL Backend
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+function getApiBase() {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, "");
+  }
+  // In browser, if we are not on localhost (e.g. on Vercel deployment), use production Render backend
+  if (typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+    return "https://agalboutique.onrender.com/api";
+  }
+  if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
+    return "https://agalboutique.onrender.com/api";
+  }
+  return "http://localhost:5000/api";
+}
+
+const API_BASE = getApiBase();
 
 // Helper for standard JSON fetch with error handling & credentials
 async function apiFetch(endpoint, options = {}) {
@@ -265,14 +279,24 @@ export async function adminUploadImage(file) {
       body: formData,
       credentials: "include",
     });
+
+    if (!res.ok) {
+      let errMsg = `Upload failed (${res.status})`;
+      try {
+        const errJson = await res.json();
+        if (errJson?.message) errMsg = errJson.message;
+      } catch (_) {}
+      return { success: false, message: errMsg };
+    }
+
     const data = await res.json();
-    if (data?.success && data?.url && data.url.startsWith("/uploads/")) {
-      const backendOrigin = API_BASE.replace(/\/api\/?$/, "");
-      data.url = `${backendOrigin}${data.url}`;
+    if (data?.success && data?.url) {
+      // Normalize URL so frontend always points to direct Cloudflare R2 CDN
+      data.url = normalizeImageUrl(data.url);
     }
     return data;
   } catch (err) {
     console.error("Image upload failed:", err);
-    return { success: false, message: err.message };
+    return { success: false, message: err.message || "Failed to upload image" };
   }
 }
