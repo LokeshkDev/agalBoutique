@@ -208,17 +208,6 @@ If you have any questions regarding your data or wish to update your details, co
     { id: "5", title: "About Us", url: "/about" },
     { id: "6", title: "Contact", url: "/contact" },
   ],
-  header_nav_menu: [
-    { title: "Popular", url: "/shop" },
-    { title: "Sarees & Handlooms", url: "/shop?category=sarees" },
-    { title: "Kurtis & Tunics", url: "/shop?category=kurtis" },
-    { title: "Full Sets & Anarkalis", url: "/shop?category=full-sets" },
-    { title: "Plus Size Tops & Sets", url: "/shop" },
-    { title: "Lehenga Sets", url: "/shop?category=lehengas" },
-    { title: "Kidswear & Pattu Pavadai", url: "/shop?category=kidswear" },
-    { title: "About Us", url: "/about" },
-    { title: "Contact Us", url: "/contact" },
-  ],
 };
 
 // Auto-create cms_settings table if needed
@@ -232,6 +221,12 @@ async function ensureCmsTable() {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
+
+    // Clean up deprecated header_nav_menu from db & tables if existing
+    try {
+      await pool.query(`DROP TABLE IF EXISTS header_nav_menu, header_navigation, header_menus;`);
+      await pool.query(`DELETE FROM cms_settings WHERE setting_key = 'header_nav_menu';`);
+    } catch (e) {}
 
     // Seed default settings if empty
     for (const [key, val] of Object.entries(defaultCmsSettings)) {

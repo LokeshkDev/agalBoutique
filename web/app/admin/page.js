@@ -501,17 +501,6 @@ export default function AdminPage() {
       { id: "5", title: "About Us", url: "/about" },
       { id: "6", title: "Contact", url: "/contact" },
     ],
-    header_nav_menu: [
-      { title: "Popular", url: "/shop" },
-      { title: "Sarees & Handlooms", url: "/shop?category=sarees" },
-      { title: "Kurtis & Tunics", url: "/shop?category=kurtis" },
-      { title: "Full Sets & Anarkalis", url: "/shop?category=full-sets" },
-      { title: "Plus Size Tops & Sets", url: "/shop" },
-      { title: "Lehenga Sets", url: "/shop?category=lehengas" },
-      { title: "Kidswear & Pattu Pavadai", url: "/shop?category=kidswear" },
-      { title: "About Us", url: "/about" },
-      { title: "Contact Us", url: "/contact" },
-    ],
   });
 
   // Product Modal State
@@ -2526,8 +2515,7 @@ export default function AdminPage() {
                 {[
                   { id: "banners", label: "Hero Banners", icon: ImageSquare, count: (cms.hero_slides || []).length },
                   { id: "announcement", label: "Announcement Bar", icon: Megaphone },
-                  { id: "header_quick_menu", label: "Header Top Menu (Swipeable)", icon: NavigationArrow, count: (cms.header_quick_menu || []).length },
-                  { id: "header_menu", label: "Category Sub-Nav Menu", icon: List, count: (cms.header_nav_menu || []).length },
+                  { id: "header_quick_menu", label: "Header Menu Links (Swipeable)", icon: NavigationArrow, count: (cms.header_quick_menu || []).length },
                   { id: "about_us", label: "About Us Page", icon: BookOpen },
                   { id: "contact_us", label: "Contact Us & Store", icon: PhoneCall },
                   { id: "policy_pages", label: "Policy Pages (Terms, Refund, Privacy)", icon: FileText },
@@ -3057,94 +3045,7 @@ export default function AdminPage() {
               </div>
             )}
 
-            {/* SUB-TAB 3: HEADER NAVIGATION MENU */}
-            {cmsSubTab === "header_menu" && (
-              <div className="space-y-6 animate-fade-in max-w-4xl">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-purple-50/60 border border-purple-200/60 p-4 rounded-xl">
-                  <div>
-                    <h3 className="text-base font-bold text-plum flex items-center gap-2">
-                      <NavigationArrow size={20} weight="bold" />
-                      <span>Header Navigation Links ({ (cms.header_nav_menu || []).length })</span>
-                    </h3>
-                    <p className="text-sm text-gray-600 mt-0.5">
-                      Configure navigation links shown under the main header on desktop and in the category drawer.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const currentMenu = Array.isArray(cms.header_nav_menu) ? cms.header_nav_menu : [];
-                      const updated = [...currentMenu, { title: "New Item", url: "/shop" }];
-                      setCms({ ...cms, header_nav_menu: updated });
-                    }}
-                    className="px-4 py-2.5 bg-emerald-700 text-white text-sm font-bold rounded-xl hover:bg-emerald-800 transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs shrink-0 self-start sm:self-auto"
-                  >
-                    <Plus size={16} weight="bold" />
-                    <span>Add Menu Item</span>
-                  </button>
-                </div>
 
-                <div className="space-y-3">
-                  {(Array.isArray(cms.header_nav_menu) ? cms.header_nav_menu : []).map((item, mIdx) => (
-                    <div key={mIdx} className="p-4 bg-gray-50 border border-gray-200 rounded-2xl flex flex-col sm:flex-row items-center gap-3">
-                      <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
-                        <div>
-                          <label className="block text-xs font-bold text-gray-700 mb-1">Menu Title / Label</label>
-                          <input
-                            type="text"
-                            value={item.title || ""}
-                            onChange={(e) => {
-                              const updated = [...(cms.header_nav_menu || [])];
-                              updated[mIdx] = { ...updated[mIdx], title: e.target.value };
-                              setCms({ ...cms, header_nav_menu: updated });
-                            }}
-                            className="w-full h-10 px-3 text-sm border border-gray-300 rounded-xl focus:outline-none focus:border-plum font-semibold bg-white"
-                            placeholder="e.g. Sarees & Silks"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-gray-700 mb-1">Target Link URL</label>
-                          <input
-                            type="text"
-                            value={item.url || ""}
-                            onChange={(e) => {
-                              const updated = [...(cms.header_nav_menu || [])];
-                              updated[mIdx] = { ...updated[mIdx], url: e.target.value };
-                              setCms({ ...cms, header_nav_menu: updated });
-                            }}
-                            className="w-full h-10 px-3 text-sm border border-gray-300 rounded-xl focus:outline-none focus:border-plum font-mono text-plum bg-white"
-                            placeholder="e.g. /shop?category=sarees"
-                          />
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const updated = (cms.header_nav_menu || []).filter((_, i) => i !== mIdx);
-                          setCms({ ...cms, header_nav_menu: updated });
-                        }}
-                        className="p-2.5 text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer shrink-0"
-                        title="Remove Menu Item"
-                      >
-                        <Trash size={18} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="pt-2">
-                  <button
-                    type="button"
-                    onClick={() => handleSaveCms("header_nav_menu", cms.header_nav_menu)}
-                    className="px-6 py-3 bg-plum text-white text-sm font-bold rounded-xl hover:bg-plum-900 transition-colors cursor-pointer shadow-md flex items-center gap-2"
-                  >
-                    <NavigationArrow size={18} />
-                    <span>Save Navigation Menu to DB</span>
-                  </button>
-                </div>
-              </div>
-            )}
 
             {/* SUB-TAB 4: ABOUT US PAGE */}
             {cmsSubTab === "about_us" && (

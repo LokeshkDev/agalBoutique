@@ -24,7 +24,7 @@ export const useCart = create(
       openCart: () => set({ open: true }),
       closeCart: () => set({ open: false }),
 
-      add: (item) =>
+      add: (item, openDrawer = true) =>
         set((s) => {
           const itemQty = item.qty || item.quantity || 1;
           const existing = s.items.find(
@@ -38,7 +38,7 @@ export const useCart = create(
                 x === existing ? { ...x, qty: (x.qty || 1) + itemQty } : x
               )
             : [...s.items, { ...item, qty: itemQty }];
-          return { items, open: true };
+          return { items, open: openDrawer ? true : s.open };
         }),
 
       setQty: (id, size, qty, color) =>

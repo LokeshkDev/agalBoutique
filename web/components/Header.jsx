@@ -35,18 +35,6 @@ const DEFAULT_QUICK_MENU = [
   { id: "6", title: "Contact", url: "/contact" },
 ];
 
-const DEFAULT_MENU_ITEMS = [
-  { title: "Popular", url: "/shop" },
-  { title: "Sarees & Handlooms", url: "/shop?category=sarees" },
-  { title: "Kurtis & Tunics", url: "/shop?category=kurtis" },
-  { title: "Full Sets & Anarkalis", url: "/shop?category=full-sets" },
-  { title: "Plus Size Tops & Sets", url: "/shop" },
-  { title: "Lehenga Sets", url: "/shop?category=lehengas" },
-  { title: "Kidswear & Pattu Pavadai", url: "/shop?category=kidswear" },
-  { title: "About Us", url: "/about" },
-  { title: "Contact Us", url: "/contact" },
-];
-
 const POPULAR_SEARCH_TAGS = [
   "Sarees",
   "Kurtis",
@@ -73,7 +61,6 @@ export default function Header() {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchParamsStr, setSearchParamsStr] = useState("");
   const [headerQuickMenu, setHeaderQuickMenu] = useState(DEFAULT_QUICK_MENU);
-  const [navMenuItems, setNavMenuItems] = useState(DEFAULT_MENU_ITEMS);
   const [categoriesList, setCategoriesList] = useState(defaultCategories);
   const [menuDrawerOpen, setMenuDrawerOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -163,13 +150,6 @@ export default function Header() {
       }
       if (Array.isArray(rawQuick) && rawQuick.length > 0) {
         setHeaderQuickMenu(rawQuick);
-      }
-      let rawNav = res?.settings?.header_nav_menu;
-      if (typeof rawNav === "string") {
-        try { rawNav = JSON.parse(rawNav); } catch (e) {}
-      }
-      if (Array.isArray(rawNav) && rawNav.length > 0) {
-        setNavMenuItems(rawNav);
       }
     });
 
@@ -637,38 +617,7 @@ export default function Header() {
         </div>
       )}
 
-      {/* Desktop Sub-Category Navigation Bar (Dynamic CMS Links, hides on scroll same like announcement bar) */}
-      <div
-        className={`hidden sm:block transition-all duration-300 ease-in-out overflow-hidden ${
-          isScrolled ? "max-h-0 opacity-0 pointer-events-none" : "max-h-14 opacity-100"
-        }`}
-      >
-        <nav
-          aria-label="Category Navigation"
-          className="w-full border-t border-gray-200 bg-white"
-        >
-          <div className="max-w-[var(--container)] mx-auto px-4 sm:px-6 lg:px-8">
-            <ul className="flex items-center gap-5 sm:gap-7 overflow-x-auto no-scrollbar py-2.5 text-xs sm:text-sm font-semibold text-gray-700 whitespace-nowrap">
-              {navMenuItems.map((item, idx) => {
-                const itemHref = item.url || item.href || "/shop";
-                const isActive = pathname + searchParamsStr === itemHref;
-                return (
-                  <li key={idx} className="shrink-0">
-                    <Link
-                      href={itemHref}
-                      className={`transition-colors hover:text-plum ${
-                        isActive ? "text-plum font-bold border-b-2 border-plum pb-1" : "text-gray-700"
-                      }`}
-                    >
-                      {item.title || item.name}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        </nav>
-      </div>
+
 
       {/* Slide-out Hamburger Drawer: Categories & Sub-Categories */}
       <Sheet

@@ -45,4 +45,4 @@ playwright/.cache/
 playwright.config.*
 tests/
 
-
+assets/
